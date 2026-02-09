@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 
 
 # --- Address ---
@@ -43,7 +43,7 @@ class ContactBase(BaseModel):
     first_name: str
     last_name: str
     job_title: str | None = None
-    email: EmailStr | None = None
+    email: str | None = None
     phone: str | None = None
     mobile: str | None = None
     is_primary: bool = False
@@ -58,7 +58,7 @@ class ContactUpdate(BaseModel):
     first_name: str | None = None
     last_name: str | None = None
     job_title: str | None = None
-    email: EmailStr | None = None
+    email: str | None = None
     phone: str | None = None
     mobile: str | None = None
     is_primary: bool | None = None
@@ -86,7 +86,7 @@ class ThirdPartyBase(BaseModel):
     customer_code: str | None = None
     supplier_code: str | None = None
     customer_credit_limit: float | None = None
-    email: EmailStr | None = None
+    email: str | None = None
     phone: str | None = None
     mobile: str | None = None
     website: str | None = None
@@ -115,7 +115,7 @@ class ThirdPartyUpdate(BaseModel):
     customer_payment_term_id: int | None = None
     supplier_payment_term_id: int | None = None
     customer_credit_limit: float | None = None
-    email: EmailStr | None = None
+    email: str | None = None
     phone: str | None = None
     mobile: str | None = None
     website: str | None = None

@@ -1,4 +1,19 @@
-from pydantic_settings import BaseSettings
+import logging
+from pathlib import Path
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+logger = logging.getLogger(__name__)
+
+# Resolve .env: check backend/.env, then project root .env
+_backend_dir = Path(__file__).resolve().parent.parent.parent  # backend/
+_root_dir = _backend_dir.parent  # ERP/
+
+_env_file: Path | None = None
+for candidate in [_backend_dir / ".env", _root_dir / ".env"]:
+    if candidate.is_file():
+        _env_file = candidate
+        break
 
 
 class Settings(BaseSettings):
@@ -43,7 +58,21 @@ class Settings(BaseSettings):
     REDIS_HOST: str = "redis"
     REDIS_PORT: int = 6379
 
-    model_config = {"env_file": ".env", "case_sensitive": True}
+    model_config = SettingsConfigDict(
+        env_file=str(_env_file) if _env_file else None,
+        env_file_encoding="utf-8",
+        case_sensitive=True,
+        # env vars always win over .env file values
+        env_nested_delimiter=None,
+    )
 
 
 settings = Settings()
+
+# Log the config source at startup
+if _env_file:
+    logger.info("Config loaded from: %s (env vars override)", _env_file)
+else:
+    logger.warning(
+        "No .env file found, using environment variables and defaults"
+    )

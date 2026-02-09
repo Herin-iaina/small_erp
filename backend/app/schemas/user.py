@@ -1,12 +1,12 @@
 from datetime import datetime
 
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import BaseModel, field_validator
 
 from app.schemas.role import RoleRead
 
 
 class UserBase(BaseModel):
-    email: EmailStr
+    email: str
     first_name: str
     last_name: str
     phone: str | None = None
@@ -28,7 +28,7 @@ class UserCreate(UserBase):
 
 
 class UserUpdate(BaseModel):
-    email: EmailStr | None = None
+    email: str | None = None
     first_name: str | None = None
     last_name: str | None = None
     phone: str | None = None

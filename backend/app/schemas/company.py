@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 
 
 class CompanyBase(BaseModel):
@@ -15,7 +15,7 @@ class CompanyBase(BaseModel):
     zip_code: str | None = None
     country: str | None = None
     phone: str | None = None
-    email: EmailStr | None = None
+    email: str | None = None
     website: str | None = None
     currency: str = "EUR"
     logo_url: str | None = None
@@ -42,7 +42,7 @@ class CompanyUpdate(BaseModel):
     zip_code: str | None = None
     country: str | None = None
     phone: str | None = None
-    email: EmailStr | None = None
+    email: str | None = None
     website: str | None = None
     currency: str | None = None
     logo_url: str | None = None
