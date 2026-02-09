@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.dependencies import PermissionChecker
-from app.core.permissions import Module, Action
+from app.core.permissions import Action, Module
 from app.models.user import User
 from app.schemas.role import RoleCreate, RoleRead, RoleUpdate
 from app.services.role import create_role, delete_role, get_role, list_roles, update_role
@@ -20,7 +20,12 @@ async def list_roles_endpoint(
     _: User = Depends(PermissionChecker("admin.view")),
 ):
     result = await list_roles(db, company_id=company_id, page=page, page_size=page_size)
-    result["items"] = [RoleRead.model_validate(r) for r in result["items"]]
+    items = []
+    for role in result["items"]:
+        data = RoleRead.model_validate(role)
+        data.user_count = getattr(role, "_user_count", 0)
+        items.append(data)
+    result["items"] = items
     return result
 
 
@@ -28,9 +33,9 @@ async def list_roles_endpoint(
 async def create_role_endpoint(
     body: RoleCreate,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(PermissionChecker("admin.create")),
+    current_user: User = Depends(PermissionChecker("admin.create")),
 ):
-    role = await create_role(db, body)
+    role = await create_role(db, body, current_user=current_user)
     return RoleRead.model_validate(role)
 
 
@@ -62,9 +67,9 @@ async def update_role_endpoint(
     role_id: int,
     body: RoleUpdate,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(PermissionChecker("admin.edit")),
+    current_user: User = Depends(PermissionChecker("admin.edit")),
 ):
-    role = await update_role(db, role_id, body)
+    role = await update_role(db, role_id, body, current_user=current_user)
     return RoleRead.model_validate(role)
 
 
@@ -72,6 +77,6 @@ async def update_role_endpoint(
 async def delete_role_endpoint(
     role_id: int,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(PermissionChecker("admin.delete")),
+    current_user: User = Depends(PermissionChecker("admin.delete")),
 ):
-    await delete_role(db, role_id)
+    await delete_role(db, role_id, current_user=current_user)

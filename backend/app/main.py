@@ -1,8 +1,10 @@
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import select
+from sqlalchemy import select, text
+from sqlalchemy.ext.asyncio import create_async_engine
 
 from app.api.v1.router import api_router
 from app.core.config import settings
@@ -13,6 +15,30 @@ from app.models.base import Base
 from app.models.company import Company
 from app.models.role import Role
 from app.models.user import User
+
+logger = logging.getLogger(__name__)
+
+
+async def ensure_database_exists() -> None:
+    """Connect to the default 'postgres' database and create the target DB if missing."""
+    admin_url = (
+        f"postgresql+asyncpg://{settings.POSTGRES_USER}:{settings.POSTGRES_PASSWORD}"
+        f"@{settings.POSTGRES_HOST}:{settings.POSTGRES_PORT}/postgres"
+    )
+    tmp_engine = create_async_engine(admin_url, isolation_level="AUTOCOMMIT")
+    try:
+        async with tmp_engine.connect() as conn:
+            result = await conn.execute(
+                text("SELECT 1 FROM pg_database WHERE datname = :dbname"),
+                {"dbname": settings.POSTGRES_DB},
+            )
+            if not result.scalar():
+                await conn.execute(text(f'CREATE DATABASE "{settings.POSTGRES_DB}"'))
+                logger.info("Created database '%s'", settings.POSTGRES_DB)
+            else:
+                logger.debug("Database '%s' already exists", settings.POSTGRES_DB)
+    finally:
+        await tmp_engine.dispose()
 
 
 async def seed_defaults() -> None:
@@ -64,7 +90,8 @@ async def seed_defaults() -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: create tables + seed
+    # Startup: ensure DB exists, create tables, seed
+    await ensure_database_exists()
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     await seed_defaults()

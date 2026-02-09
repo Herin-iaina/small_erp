@@ -53,6 +53,10 @@ class UserChangePassword(BaseModel):
     new_password: str
 
 
+class UserResetPassword(BaseModel):
+    new_password: str
+
+
 class UserRead(UserBase):
     id: int
     is_active: bool
