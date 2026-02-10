@@ -1,13 +1,6 @@
-export interface Role {
-  id: number;
-  name: string;
-  label: string;
-  permissions: string[];
-  is_superadmin: boolean;
-  multi_company: boolean;
-  is_system: boolean;
-  company_id: number | null;
-}
+import type { Role } from "@/types/role";
+
+export type { Role };
 
 export interface User {
   id: number;

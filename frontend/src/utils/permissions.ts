@@ -7,13 +7,17 @@ export interface NavItem {
   path: string;
   icon: string; // lucide icon name
   permission: string; // required permission
+  group?: string; // sidebar section group
 }
 
 export const NAV_ITEMS: NavItem[] = [
   { label: "Tableau de bord", path: "/", icon: "LayoutDashboard", permission: "admin.view" },
-  { label: "Societes", path: "/companies", icon: "Building2", permission: "admin.view" },
-  { label: "Utilisateurs", path: "/users", icon: "Users", permission: "admin.view" },
-  { label: "Roles", path: "/roles", icon: "Shield", permission: "admin.view" },
+  // Administration group
+  { label: "Societes", path: "/companies", icon: "Building2", permission: "admin.view", group: "Administration" },
+  { label: "Utilisateurs", path: "/users", icon: "Users", permission: "admin.view", group: "Administration" },
+  { label: "Roles", path: "/roles", icon: "Shield", permission: "admin.view", group: "Administration" },
+  { label: "Journal d'audit", path: "/audit-logs", icon: "ScrollText", permission: "admin.view", group: "Administration" },
+  // Business
   { label: "Tiers", path: "/third-parties", icon: "Contact", permission: "third_party.view" },
   // Future modules:
   { label: "Point de vente", path: "/pos", icon: "ShoppingCart", permission: "pos.view" },

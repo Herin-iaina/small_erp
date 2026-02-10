@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(/Users/arthur_smartelia/ERP/backend/.venv/bin/pip uninstall:*)"
+    ]
+  }
+}

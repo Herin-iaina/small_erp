@@ -10,6 +10,7 @@ import {
   ShoppingBag,
   Package,
   FileText,
+  ScrollText,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -28,6 +29,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   ShoppingBag,
   Package,
   FileText,
+  ScrollText,
 };
 
 export function Sidebar() {
@@ -35,6 +37,18 @@ export function Sidebar() {
   const { can } = usePermissions();
 
   const visibleItems = NAV_ITEMS.filter((item) => can(item.permission));
+
+  // Group items by their group property
+  const grouped: { group: string | undefined; items: typeof visibleItems }[] = [];
+  let currentGroup: string | undefined = "__initial__";
+
+  for (const item of visibleItems) {
+    if (item.group !== currentGroup) {
+      currentGroup = item.group;
+      grouped.push({ group: currentGroup, items: [] });
+    }
+    grouped[grouped.length - 1]!.items.push(item);
+  }
 
   return (
     <aside
@@ -53,26 +67,41 @@ export function Sidebar() {
       </div>
 
       <nav className="space-y-1 p-2">
-        {visibleItems.map((item) => {
-          const Icon = ICON_MAP[item.icon] ?? LayoutDashboard;
-          return (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              className={({ isActive }) =>
-                cn(
-                  "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent",
-                  isActive
-                    ? "bg-accent text-accent-foreground"
-                    : "text-muted-foreground"
-                )
-              }
-            >
-              <Icon className="h-5 w-5 shrink-0" />
-              {sidebarOpen && <span>{item.label}</span>}
-            </NavLink>
-          );
-        })}
+        {grouped.map((section, idx) => (
+          <div key={section.group ?? "top"}>
+            {section.group && sidebarOpen && (
+              <div className={cn("px-3 py-2", idx > 0 && "mt-4")}>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  {section.group}
+                </p>
+              </div>
+            )}
+            {section.group && !sidebarOpen && idx > 0 && (
+              <div className="my-2 mx-2 border-t" />
+            )}
+            {section.items.map((item) => {
+              const Icon = ICON_MAP[item.icon] ?? LayoutDashboard;
+              return (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  end={item.path === "/"}
+                  className={({ isActive }) =>
+                    cn(
+                      "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent",
+                      isActive
+                        ? "bg-accent text-accent-foreground"
+                        : "text-muted-foreground"
+                    )
+                  }
+                >
+                  <Icon className="h-5 w-5 shrink-0" />
+                  {sidebarOpen && <span>{item.label}</span>}
+                </NavLink>
+              );
+            })}
+          </div>
+        ))}
       </nav>
     </aside>
   );

@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip install:*)",
+      "Bash(pg_isready:*)",
+      "Bash(docker ps:*)",
+      "Bash(docker exec:*)",
+      "Bash(lsof:*)",
+      "Bash(xargs kill:*)",
+      "Bash(curl:*)",
+      "Bash(python3:*)",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJhZG1pbkBlcnAubG9jYWwiLCJjb21wYW55X2lkIjoiMSIsImV4cCI6MTc3MDYzMTcwNywidHlwZSI6ImFjY2VzcyJ9.OfsIdYEFuAKko3BQUJz2SPdW7Cu1kWbNNKsOVL0Obt8\")",
+      "Bash(/Users/arthur_smartelia/ERP/backend/.venv/bin/pip show:*)",
+      "Bash(npx shadcn@latest add:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx vite build:*)"
+    ]
+  }
+}

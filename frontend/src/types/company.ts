@@ -10,6 +10,11 @@ export interface Company {
   country: string | null;
   phone: string | null;
   email: string | null;
+  registration_number: string | null;
+  address_line2: string | null;
+  website: string | null;
+  logo_url: string | null;
+  notes: string | null;
   currency: string;
   is_active: boolean;
   pos_stock_deduction: string;
