@@ -26,7 +26,7 @@ async def create_company(
             description=f"Created company '{company.name}'",
             new_values=data.model_dump(),
         )
-    return company
+    return await get_company(db, company.id)
 
 
 async def get_company(db: AsyncSession, company_id: int) -> Company:
@@ -79,7 +79,7 @@ async def update_company(
             old_values=old_values,
             new_values=update_data,
         )
-    return company
+    return await get_company(db, company_id)
 
 
 async def toggle_company_status(
@@ -101,4 +101,4 @@ async def toggle_company_status(
             old_values={"is_active": old_status},
             new_values={"is_active": company.is_active},
         )
-    return company
+    return await get_company(db, company_id)

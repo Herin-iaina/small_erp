@@ -26,7 +26,7 @@ async def create_role(
             description=f"Created role '{role.label}'",
             new_values=data.model_dump(),
         )
-    return role
+    return await get_role(db, role.id)
 
 
 async def get_role(db: AsyncSession, role_id: int) -> Role:
@@ -116,7 +116,7 @@ async def update_role(
             old_values=old_values,
             new_values=update_data,
         )
-    return role
+    return await get_role(db, role_id)
 
 
 async def delete_role(

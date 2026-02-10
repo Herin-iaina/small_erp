@@ -45,7 +45,7 @@ async def create_user(
             description=f"Created user '{user.email}'",
             new_values={"email": user.email, "first_name": user.first_name, "last_name": user.last_name},
         )
-    return user
+    return await get_user(db, user.id)
 
 
 async def get_user(db: AsyncSession, user_id: int) -> User:
@@ -113,7 +113,7 @@ async def update_user(
             old_values=old_values,
             new_values=update_data,
         )
-    return user
+    return await get_user(db, user_id)
 
 
 async def set_user_pin(
@@ -132,7 +132,7 @@ async def set_user_pin(
             entity_id=user.id,
             description=f"Set PIN for user '{user.email}'",
         )
-    return user
+    return await get_user(db, user_id)
 
 
 async def toggle_user_status(
@@ -154,7 +154,7 @@ async def toggle_user_status(
             old_values={"is_active": old_status},
             new_values={"is_active": user.is_active},
         )
-    return user
+    return await get_user(db, user_id)
 
 
 async def admin_reset_password(
@@ -173,7 +173,7 @@ async def admin_reset_password(
             entity_id=user.id,
             description=f"Reset password for user '{user.email}'",
         )
-    return user
+    return await get_user(db, user_id)
 
 
 async def change_password(
@@ -186,4 +186,4 @@ async def change_password(
         )
     user.hashed_password = hash_password(new_password)
     await db.flush()
-    return user
+    return await get_user(db, user.id)
