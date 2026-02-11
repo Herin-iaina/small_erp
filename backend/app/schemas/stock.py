@@ -387,6 +387,13 @@ class InventoryLineUpdate(BaseModel):
     notes: str | None = None
 
 
+class InventoryLineCreate(BaseModel):
+    product_id: int
+    location_id: int
+    lot_id: int | None = None
+    expected_quantity: Decimal = Decimal(0)
+
+
 class InventoryWarehouseInfo(BaseModel):
     id: int
     code: str
@@ -404,7 +411,7 @@ class InventoryUserInfo(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class InventoryRead(BaseModel):
+class InventoryListRead(BaseModel):
     id: int
     reference: str
     name: str
@@ -417,11 +424,14 @@ class InventoryRead(BaseModel):
     company_id: int
     warehouse: InventoryWarehouseInfo | None = None
     created_by: InventoryUserInfo | None = None
-    lines: list[InventoryLineRead] = []
     created_at: datetime
     updated_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class InventoryRead(InventoryListRead):
+    lines: list[InventoryLineRead] = []
 
 
 # --- Dashboard ---

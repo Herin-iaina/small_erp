@@ -261,6 +261,11 @@ export async function createInventory(body: { name: string; warehouse_id: number
   return data;
 }
 
+export async function addInventoryLine(inventoryId: number, body: { product_id: number; location_id: number; lot_id?: number | null; expected_quantity?: number }): Promise<Inventory> {
+  const { data } = await api.post(`/inventories/${inventoryId}/lines`, body);
+  return data;
+}
+
 export async function startInventory(id: number): Promise<Inventory> {
   const { data } = await api.post(`/inventories/${id}/start`);
   return data;
@@ -295,5 +300,10 @@ export async function getStockAlerts(companyId: number): Promise<StockAlert[]> {
 
 export async function getStockValuation(companyId: number): Promise<StockValuationItem[]> {
   const { data } = await api.get("/stock-dashboard/valuation", { params: { company_id: companyId } });
+  return data;
+}
+
+export async function getProductStockTotals(companyId: number): Promise<Record<string, number>> {
+  const { data } = await api.get("/stock-dashboard/product-stock-totals", { params: { company_id: companyId } });
   return data;
 }

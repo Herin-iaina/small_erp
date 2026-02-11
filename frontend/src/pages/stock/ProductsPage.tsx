@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus, Pencil, Power } from "lucide-react";
 import { useDataFetch } from "@/hooks/useDataFetch";
 import { DataTable, type Column } from "@/components/shared/DataTable";
@@ -15,19 +15,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { listProducts, toggleProductStatus, type ProductListParams } from "@/services/stock";
+import { listProducts, toggleProductStatus, getProductStockTotals, type ProductListParams } from "@/services/stock";
 import type { Product } from "@/types/stock";
 import { useAuthStore } from "@/stores/authStore";
-
-const columns: Column<Product>[] = [
-  { key: "sku", label: "SKU", className: "font-mono" },
-  { key: "name", label: "Nom" },
-  { key: "category", label: "Categorie", render: (p) => p.category?.name || "-" },
-  { key: "product_type", label: "Type" },
-  { key: "sale_price", label: "Prix vente", render: (p) => `${Number(p.sale_price).toFixed(2)} €`, className: "text-right" },
-  { key: "cost_price", label: "Prix revient", render: (p) => `${Number(p.cost_price).toFixed(2)} €`, className: "text-right" },
-  { key: "is_active", label: "Statut", render: (p) => <StatusBadge active={p.is_active} /> },
-];
 
 export default function ProductsPage() {
   const companyId = useAuthStore((s) => s.user?.company_id);
@@ -35,12 +25,47 @@ export default function ProductsPage() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [togglingProduct, setTogglingProduct] = useState<Product | null>(null);
+  const [stockTotals, setStockTotals] = useState<Record<string, number>>({});
 
   const { data, total, page, pages, loading, params, setParams, setPage, refresh } =
     useDataFetch<Product, ProductListParams>({
       fetchFn: listProducts,
       initialParams: { company_id: companyId!, page: 1, page_size: 20 },
     });
+
+  // Load stock totals whenever data changes
+  useEffect(() => {
+    if (!companyId) return;
+    getProductStockTotals(companyId)
+      .then(setStockTotals)
+      .catch(() => {});
+  }, [companyId, data]);
+
+  const columns: Column<Product>[] = [
+    { key: "sku", label: "SKU", className: "font-mono" },
+    { key: "name", label: "Nom" },
+    { key: "category", label: "Categorie", render: (p) => p.category?.name || "-" },
+    { key: "product_type", label: "Type" },
+    {
+      key: "stock",
+      label: "Stock",
+      render: (p) => {
+        if (p.product_type !== "stockable") return <span className="text-muted-foreground">-</span>;
+        const qty = stockTotals[String(p.id)] ?? 0;
+        const isLow = p.reorder_point > 0 && qty <= p.reorder_point;
+        const isOut = qty <= 0;
+        return (
+          <span className={`font-semibold ${isOut ? "text-red-600" : isLow ? "text-orange-500" : ""}`}>
+            {qty.toFixed(1)}
+          </span>
+        );
+      },
+      className: "text-right",
+    },
+    { key: "sale_price", label: "Prix vente", render: (p) => `${Number(p.sale_price).toFixed(2)} €`, className: "text-right" },
+    { key: "cost_price", label: "Prix revient", render: (p) => `${Number(p.cost_price).toFixed(2)} €`, className: "text-right" },
+    { key: "is_active", label: "Statut", render: (p) => <StatusBadge active={p.is_active} /> },
+  ];
 
   const handleCreate = () => {
     setEditingProduct(null);

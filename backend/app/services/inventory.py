@@ -15,7 +15,7 @@ from app.models.stock import (
     Product,
 )
 from app.models.user import User
-from app.schemas.stock import InventoryCreate, InventoryLineUpdate
+from app.schemas.stock import InventoryCreate, InventoryLineCreate, InventoryLineUpdate
 from app.services.audit import log_action
 from app.utils.pagination import paginate
 
@@ -171,6 +171,27 @@ async def start_inventory(
         entity_id=inventory.id,
         description=f"Started inventory '{inventory.name}'",
     )
+    return await get_inventory(db, inventory_id)
+
+
+async def add_inventory_line(
+    db: AsyncSession, inventory_id: int, data: InventoryLineCreate, current_user: User
+) -> Inventory:
+    inventory = await get_inventory(db, inventory_id)
+    if inventory.status not in ("draft", "in_progress"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Can only add lines to a draft or in-progress inventory",
+        )
+    line = InventoryLine(
+        inventory_id=inventory_id,
+        product_id=data.product_id,
+        location_id=data.location_id,
+        lot_id=data.lot_id,
+        expected_quantity=data.expected_quantity,
+    )
+    db.add(line)
+    await db.flush()
     return await get_inventory(db, inventory_id)
 
 

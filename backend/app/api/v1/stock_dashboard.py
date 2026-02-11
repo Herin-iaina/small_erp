@@ -6,6 +6,7 @@ from app.core.dependencies import PermissionChecker
 from app.models.user import User
 from app.schemas.stock import StockAlert, StockKPIs, StockValuationItem
 from app.services.stock_dashboard import (
+    get_product_stock_totals,
     get_stock_alerts,
     get_stock_kpis,
     get_stock_valuation,
@@ -39,3 +40,13 @@ async def get_valuation_endpoint(
     _: User = Depends(PermissionChecker("stock.view")),
 ):
     return await get_stock_valuation(db, company_id)
+
+
+@router.get("/product-stock-totals", response_model=dict)
+async def get_product_stock_totals_endpoint(
+    company_id: int = Query(...),
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(PermissionChecker("stock.view")),
+):
+    totals = await get_product_stock_totals(db, company_id)
+    return {str(k): float(v) for k, v in totals.items()}

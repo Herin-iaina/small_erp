@@ -168,3 +168,18 @@ async def get_stock_valuation(db: AsyncSession, company_id: int) -> list[dict]:
         }
         for row in result.all()
     ]
+
+
+async def get_product_stock_totals(
+    db: AsyncSession, company_id: int
+) -> dict[int, Decimal]:
+    """Return {product_id: total_quantity} for all products with stock."""
+    result = await db.execute(
+        select(
+            StockLevel.product_id,
+            func.coalesce(func.sum(StockLevel.quantity), 0).label("total"),
+        )
+        .where(StockLevel.company_id == company_id)
+        .group_by(StockLevel.product_id)
+    )
+    return {row.product_id: row.total for row in result.all()}

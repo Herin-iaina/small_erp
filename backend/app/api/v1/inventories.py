@@ -4,8 +4,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.dependencies import PermissionChecker
 from app.models.user import User
-from app.schemas.stock import InventoryCreate, InventoryLineUpdate, InventoryRead
+from app.schemas.stock import InventoryCreate, InventoryLineCreate, InventoryLineUpdate, InventoryListRead, InventoryRead
 from app.services.inventory import (
+    add_inventory_line,
     cancel_inventory,
     create_inventory,
     get_inventory,
@@ -34,7 +35,7 @@ async def list_inventories_endpoint(
         status_filter=status, warehouse_id=warehouse_id,
         search=search, page=page, page_size=page_size,
     )
-    result["items"] = [InventoryRead.model_validate(i) for i in result["items"]]
+    result["items"] = [InventoryListRead.model_validate(i) for i in result["items"]]
     return result
 
 
@@ -65,6 +66,17 @@ async def start_inventory_endpoint(
     current_user: User = Depends(PermissionChecker("stock.edit")),
 ):
     inventory = await start_inventory(db, inventory_id, current_user)
+    return InventoryRead.model_validate(inventory)
+
+
+@router.post("/{inventory_id}/lines", response_model=InventoryRead, status_code=201)
+async def add_inventory_line_endpoint(
+    inventory_id: int,
+    body: InventoryLineCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("stock.edit")),
+):
+    inventory = await add_inventory_line(db, inventory_id, body, current_user)
     return InventoryRead.model_validate(inventory)
 
 
