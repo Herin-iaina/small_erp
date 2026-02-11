@@ -11,6 +11,11 @@ import {
   Package,
   FileText,
   ScrollText,
+  BarChart3,
+  Warehouse,
+  ArrowLeftRight,
+  Layers,
+  ClipboardCheck,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -30,6 +35,11 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Package,
   FileText,
   ScrollText,
+  BarChart3,
+  Warehouse,
+  ArrowLeftRight,
+  Layers,
+  ClipboardCheck,
 };
 
 export function Sidebar() {

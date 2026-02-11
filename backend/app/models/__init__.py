@@ -5,6 +5,17 @@ from app.models.user import User
 from app.models.third_party import ThirdParty, Address, Contact
 from app.models.payment_term import PaymentTerm
 from app.models.audit_log import AuditLog
+from app.models.stock import (
+    ProductCategory,
+    Product,
+    Warehouse,
+    StockLocation,
+    Lot,
+    StockLevel,
+    StockMovement,
+    Inventory,
+    InventoryLine,
+)
 
 __all__ = [
     "Base",
@@ -16,4 +27,13 @@ __all__ = [
     "Contact",
     "PaymentTerm",
     "AuditLog",
+    "ProductCategory",
+    "Product",
+    "Warehouse",
+    "StockLocation",
+    "Lot",
+    "StockLevel",
+    "StockMovement",
+    "Inventory",
+    "InventoryLine",
 ]

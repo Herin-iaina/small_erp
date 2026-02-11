@@ -19,11 +19,17 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "Journal d'audit", path: "/audit-logs", icon: "ScrollText", permission: "admin.view", group: "Administration" },
   // Business
   { label: "Tiers", path: "/third-parties", icon: "Contact", permission: "third_party.view" },
+  // Stock module
+  { label: "Tableau de bord", path: "/stock", icon: "BarChart3", permission: "stock.view", group: "Stock" },
+  { label: "Articles", path: "/stock/products", icon: "Package", permission: "stock.view", group: "Stock" },
+  { label: "Entrepots", path: "/stock/warehouses", icon: "Warehouse", permission: "stock.view", group: "Stock" },
+  { label: "Mouvements", path: "/stock/movements", icon: "ArrowLeftRight", permission: "stock.view", group: "Stock" },
+  { label: "Lots", path: "/stock/lots", icon: "Layers", permission: "stock.view", group: "Stock" },
+  { label: "Inventaires", path: "/stock/inventories", icon: "ClipboardCheck", permission: "stock.view", group: "Stock" },
   // Future modules:
   { label: "Point de vente", path: "/pos", icon: "ShoppingCart", permission: "pos.view" },
   { label: "Ventes", path: "/sales", icon: "TrendingUp", permission: "sales.view" },
   { label: "Achats", path: "/purchases", icon: "ShoppingBag", permission: "purchase.view" },
-  { label: "Stock", path: "/stock", icon: "Package", permission: "stock.view" },
   { label: "Facturation", path: "/invoicing", icon: "FileText", permission: "invoicing.view" },
 ];
 

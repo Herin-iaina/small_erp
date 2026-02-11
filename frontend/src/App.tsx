@@ -10,6 +10,13 @@ import UsersPage from "@/pages/UsersPage";
 import CompaniesPage from "@/pages/CompaniesPage";
 import RolesPage from "@/pages/RolesPage";
 import AuditLogsPage from "@/pages/AuditLogsPage";
+import StockDashboard from "@/pages/stock/StockDashboard";
+import ProductsPage from "@/pages/stock/ProductsPage";
+import WarehousesPage from "@/pages/stock/WarehousesPage";
+import MovementsPage from "@/pages/stock/MovementsPage";
+import LotsPage from "@/pages/stock/LotsPage";
+import InventoriesPage from "@/pages/stock/InventoriesPage";
+import InventoryDetailPage from "@/pages/stock/InventoryDetailPage";
 import NotFoundPage from "@/pages/NotFound";
 
 export default function App() {
@@ -62,6 +69,63 @@ export default function App() {
             element={
               <ProtectedRoute permission="admin.view">
                 <AuditLogsPage />
+              </ProtectedRoute>
+            }
+          />
+          {/* Stock module */}
+          <Route
+            path="stock"
+            element={
+              <ProtectedRoute permission="stock.view">
+                <StockDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="stock/products"
+            element={
+              <ProtectedRoute permission="stock.view">
+                <ProductsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="stock/warehouses"
+            element={
+              <ProtectedRoute permission="stock.view">
+                <WarehousesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="stock/movements"
+            element={
+              <ProtectedRoute permission="stock.view">
+                <MovementsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="stock/lots"
+            element={
+              <ProtectedRoute permission="stock.view">
+                <LotsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="stock/inventories"
+            element={
+              <ProtectedRoute permission="stock.view">
+                <InventoriesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="stock/inventories/:id"
+            element={
+              <ProtectedRoute permission="stock.view">
+                <InventoryDetailPage />
               </ProtectedRoute>
             }
           />
