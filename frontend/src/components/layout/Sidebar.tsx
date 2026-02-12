@@ -16,6 +16,7 @@ import {
   ArrowLeftRight,
   Layers,
   ClipboardCheck,
+  FolderTree,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -40,6 +41,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   ArrowLeftRight,
   Layers,
   ClipboardCheck,
+  FolderTree,
 };
 
 export function Sidebar() {

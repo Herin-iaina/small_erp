@@ -17,6 +17,7 @@ import MovementsPage from "@/pages/stock/MovementsPage";
 import LotsPage from "@/pages/stock/LotsPage";
 import InventoriesPage from "@/pages/stock/InventoriesPage";
 import InventoryDetailPage from "@/pages/stock/InventoryDetailPage";
+import CategoriesPage from "@/pages/stock/CategoriesPage";
 import NotFoundPage from "@/pages/NotFound";
 
 export default function App() {
@@ -78,6 +79,14 @@ export default function App() {
             element={
               <ProtectedRoute permission="stock.view">
                 <StockDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="stock/categories"
+            element={
+              <ProtectedRoute permission="stock.view">
+                <CategoriesPage />
               </ProtectedRoute>
             }
           />

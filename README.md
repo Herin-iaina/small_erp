@@ -96,27 +96,47 @@ ERP/
 │       │   ├── role.py       # Role + permissions JSON
 │       │   ├── third_party.py # ThirdParty + Address + Contact
 │       │   ├── payment_term.py
-│       │   └── audit_log.py  # Tracabilite complete
+│       │   ├── audit_log.py  # Tracabilite complete
+│       │   └── stock.py      # Product, Warehouse, Location, Lot, Movement, Inventory, StockLevel
 │       ├── schemas/          # Pydantic validation
+│       │   ├── stock.py      # Schemas stock (Product, Warehouse, Lot, Movement, Inventory, Dashboard)
+│       │   └── ...
 │       ├── api/v1/           # Routes REST
 │       │   ├── auth.py       # Login, refresh, /me, verify-pin
 │       │   ├── users.py      # CRUD users, set PIN, change password
 │       │   ├── companies.py  # CRUD companies
 │       │   ├── roles.py      # CRUD roles + permissions dispo
-│       │   └── third_parties.py # CRUD tiers + addresses + contacts
+│       │   ├── third_parties.py # CRUD tiers + addresses + contacts
+│       │   ├── categories.py    # CRUD categories produits
+│       │   ├── products.py      # CRUD produits + stock summary
+│       │   ├── warehouses.py    # CRUD entrepots + emplacements
+│       │   ├── lots.py          # CRUD lots (tracabilite)
+│       │   ├── stock_movements.py # Mouvements stock (CRUD + validation)
+│       │   ├── inventories.py   # Inventaires physiques (CRUD + lignes)
+│       │   └── stock_dashboard.py # KPIs, alertes, valorisation
 │       └── services/         # Logique metier
+│           ├── product.py        # Produits + stock summary
+│           ├── warehouse.py      # Entrepots + emplacements
+│           ├── lot.py            # Lots (tracabilite)
+│           ├── stock_movement.py # Mouvements + validation + CUMP
+│           ├── inventory.py      # Inventaires + lignes
+│           ├── stock_dashboard.py # KPIs, alertes, valorisation
+│           └── ...
 └── frontend/
     ├── Dockerfile
     └── src/
         ├── components/
         │   ├── ui/           # Shadcn (Button, Input, Card, Label)
         │   ├── layout/       # Sidebar, Header, MainLayout
-        │   └── auth/         # LoginForm, ProtectedRoute
-        ├── pages/            # Login, Dashboard, Users, Companies
+        │   ├── auth/         # LoginForm, ProtectedRoute
+        │   └── stock/        # FormDialogs (Product, Lot, Movement, Location, Inventory)
+        ├── pages/
+        │   ├── stock/        # Dashboard, Products, Warehouses, Lots, Movements, Inventories
+        │   └── ...           # Login, Dashboard, Users, Companies
         ├── stores/           # Zustand (auth, ui)
-        ├── hooks/            # useAuth, usePermissions
-        ├── services/         # Axios API client
-        ├── types/            # TypeScript interfaces
+        ├── hooks/            # useAuth, usePermissions, useDataFetch
+        ├── services/         # Axios API client (api.ts, stock.ts)
+        ├── types/            # TypeScript interfaces (stock.ts)
         └── utils/            # Navigation filtree par permissions
 ```
 
@@ -161,7 +181,69 @@ Un seul modele gere clients, fournisseurs et employes via des flags :
 - Chaque role a ses propres champs (code client, conditions paiement fournisseur, etc.)
 - Adresses et contacts multiples par tiers
 
+## Module Stock
+
+### Vue d'ensemble
+
+Le module stock gere l'ensemble du cycle de vie des produits : catalogage, stockage, tracabilite par lots, mouvements de stock et inventaires physiques.
+
+### Modeles de donnees
+
+| Modele | Description |
+|--------|-------------|
+| **ProductCategory** | Categories hierarchiques (parent/enfant) pour classer les produits |
+| **Product** | Articles avec type (stockable, consommable, service), prix, seuils d'alerte, methode de valorisation |
+| **Warehouse** | Entrepots physiques avec code unique par societe |
+| **StockLocation** | Emplacements dans un entrepot (allee, etagere, casier) avec type (stockage, reception, expedition, production) |
+| **Lot** | Tracabilite par lot : numero, dates (fabrication, peremption, DLUO), fournisseur |
+| **StockMovement** | Mouvements : entree, sortie, transfert, ajustement. Cycle brouillon → valide / annule |
+| **StockLevel** | Niveaux de stock en temps reel par produit/emplacement/lot (quantite, reserve, disponible) |
+| **Inventory** | Inventaires physiques : brouillon → en cours → valide/annule |
+| **InventoryLine** | Lignes d'inventaire : quantite attendue vs comptee, ecart calcule |
+
+### Flux de mouvements
+
+```
+Brouillon  ──(valider)──►  Valide  (met a jour StockLevel + calcul CUMP)
+    │
+    └──(annuler)──►  Annule
+```
+
+**Types de mouvements** :
+- **Entree** (`in`) : reception de marchandise → destination obligatoire
+- **Sortie** (`out`) : expedition → source obligatoire
+- **Transfert** (`transfer`) : deplacement interne → source + destination
+- **Ajustement** (`adjustment`) : correction de stock → destination obligatoire
+
+### Valorisation CUMP
+
+A chaque entree validee avec cout unitaire, le Cout Unitaire Moyen Pondere (CUMP) du produit est recalcule :
+
+```
+nouveau_cump = (stock_actuel * ancien_cump + quantite_entree * cout_unitaire) / (stock_actuel + quantite_entree)
+```
+
+### Inventaire physique
+
+1. Creer un inventaire (lie a un entrepot)
+2. Ajouter les articles a compter (manuellement ou auto depuis les niveaux de stock)
+3. Demarrer l'inventaire → saisir les quantites comptees
+4. Valider → les ecarts generent automatiquement des mouvements d'ajustement
+
+### Pages frontend
+
+| Page | Route | Description |
+|------|-------|-------------|
+| Tableau de bord | `/stock` | KPIs (valeur stock, alertes, ruptures), graphiques |
+| Articles | `/stock/products` | CRUD produits avec colonne stock temps reel |
+| Entrepots | `/stock/warehouses` | CRUD entrepots + emplacements imbriques |
+| Lots | `/stock/lots` | CRUD lots avec tracabilite fournisseur |
+| Mouvements | `/stock/movements` | CRUD mouvements + validation/annulation |
+| Inventaires | `/stock/inventories` | Liste des inventaires + detail avec saisie |
+
 ## Endpoints API (v1)
+
+### Administration
 
 | Methode | Endpoint | Description |
 |---------|----------|-------------|
@@ -181,10 +263,43 @@ Un seul modele gere clients, fournisseurs et employes via des flags :
 | POST | `/api/v1/third-parties/{id}/addresses` | Ajouter adresse |
 | POST | `/api/v1/third-parties/{id}/contacts` | Ajouter contact |
 
+### Module Stock
+
+| Methode | Endpoint | Description |
+|---------|----------|-------------|
+| GET/POST | `/api/v1/categories` | Lister / creer categories |
+| PATCH/DELETE | `/api/v1/categories/{id}` | Modifier / supprimer categorie |
+| GET | `/api/v1/categories/tree` | Arborescence des categories |
+| GET/POST | `/api/v1/products` | Lister / creer produits |
+| GET/PATCH | `/api/v1/products/{id}` | Voir / modifier produit |
+| POST | `/api/v1/products/{id}/toggle-status` | Activer / desactiver produit |
+| GET | `/api/v1/products/{id}/stock` | Resume stock par emplacement |
+| GET/POST | `/api/v1/warehouses` | Lister / creer entrepots |
+| GET/PATCH | `/api/v1/warehouses/{id}` | Voir / modifier entrepot |
+| GET/POST | `/api/v1/warehouses/{id}/locations` | Lister / creer emplacements |
+| PATCH/DELETE | `/api/v1/warehouses/locations/{id}` | Modifier / supprimer emplacement |
+| GET/POST | `/api/v1/lots` | Lister / creer lots |
+| GET/PATCH | `/api/v1/lots/{id}` | Voir / modifier lot |
+| GET/POST | `/api/v1/stock-movements` | Lister / creer mouvements |
+| GET/PATCH | `/api/v1/stock-movements/{id}` | Voir / modifier mouvement |
+| POST | `/api/v1/stock-movements/{id}/validate` | Valider mouvement |
+| POST | `/api/v1/stock-movements/{id}/cancel` | Annuler mouvement |
+| GET/POST | `/api/v1/inventories` | Lister / creer inventaires |
+| GET | `/api/v1/inventories/{id}` | Detail inventaire + lignes |
+| POST | `/api/v1/inventories/{id}/lines` | Ajouter une ligne |
+| PATCH | `/api/v1/inventories/{id}/lines/{line_id}` | Saisir quantite comptee |
+| POST | `/api/v1/inventories/{id}/start` | Demarrer inventaire |
+| POST | `/api/v1/inventories/{id}/validate` | Valider inventaire |
+| POST | `/api/v1/inventories/{id}/cancel` | Annuler inventaire |
+| GET | `/api/v1/stock-dashboard/kpis` | KPIs stock |
+| GET | `/api/v1/stock-dashboard/alerts` | Alertes stock bas / rupture |
+| GET | `/api/v1/stock-dashboard/valuation` | Valorisation stock |
+| GET | `/api/v1/stock-dashboard/product-stock-totals` | Totaux stock par produit |
+
 ## Prochaines etapes
 
-Les modules metier seront ajoutes progressivement :
-1. **Module Stock** : Produits, mouvements, inventaires, alertes
+Les modules metier sont ajoutes progressivement :
+1. ~~**Module Stock** : Produits, mouvements, inventaires, alertes~~ ✅
 2. **Module Ventes** : Devis, commandes, bons de livraison
 3. **Module POS** : Caisse, sessions, encaissements
 4. **Module Achats** : Commandes fournisseurs, receptions

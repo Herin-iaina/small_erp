@@ -21,6 +21,7 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "Tiers", path: "/third-parties", icon: "Contact", permission: "third_party.view" },
   // Stock module
   { label: "Tableau de bord", path: "/stock", icon: "BarChart3", permission: "stock.view", group: "Stock" },
+  { label: "Categories", path: "/stock/categories", icon: "FolderTree", permission: "stock.view", group: "Stock" },
   { label: "Articles", path: "/stock/products", icon: "Package", permission: "stock.view", group: "Stock" },
   { label: "Entrepots", path: "/stock/warehouses", icon: "Warehouse", permission: "stock.view", group: "Stock" },
   { label: "Mouvements", path: "/stock/movements", icon: "ArrowLeftRight", permission: "stock.view", group: "Stock" },
