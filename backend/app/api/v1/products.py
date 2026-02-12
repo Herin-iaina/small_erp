@@ -31,7 +31,7 @@ async def list_products_endpoint(
     tracking_type: str | None = Query(None),
     search: str | None = Query(None),
     page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1, le=100),
+    page_size: int = Query(20, ge=1, le=200),
     db: AsyncSession = Depends(get_db),
     _: User = Depends(PermissionChecker("stock.view")),
 ):

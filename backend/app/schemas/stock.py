@@ -156,7 +156,6 @@ class StockLocationBase(BaseModel):
 
 
 class StockLocationCreate(StockLocationBase):
-    warehouse_id: int
     company_id: int
 
 
