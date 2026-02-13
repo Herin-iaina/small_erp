@@ -17,6 +17,9 @@ import {
   Layers,
   ClipboardCheck,
   FolderTree,
+  Lock,
+  RefreshCw,
+  ScanBarcode,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -42,6 +45,9 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Layers,
   ClipboardCheck,
   FolderTree,
+  Lock,
+  RefreshCw,
+  ScanBarcode,
 };
 
 export function Sidebar() {

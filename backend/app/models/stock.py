@@ -74,6 +74,9 @@ class Product(Base):
     weight: Mapped[Decimal | None] = mapped_column(Numeric(10, 3))
     image_url: Mapped[str | None] = mapped_column(String(500))
     lead_time_days: Mapped[int] = mapped_column(Integer, default=0)
+    optimal_order_quantity: Mapped[Decimal] = mapped_column(Numeric(12, 3), default=0)
+    average_daily_consumption: Mapped[Decimal] = mapped_column(Numeric(12, 3), default=0)
+    abc_classification: Mapped[str | None] = mapped_column(String(1))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     company_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False
@@ -278,6 +281,64 @@ class Inventory(Base):
         "InventoryLine", back_populates="inventory", cascade="all, delete-orphan"
     )
     created_by: Mapped["User | None"] = relationship("User")  # noqa: F821
+    company: Mapped["Company"] = relationship("Company")  # noqa: F821
+
+
+class StockReservation(Base):
+    __tablename__ = "stock_reservations"
+
+    product_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("products.id", ondelete="CASCADE"), nullable=False
+    )
+    location_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("stock_locations.id", ondelete="CASCADE"), nullable=False
+    )
+    lot_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("lots.id", ondelete="SET NULL")
+    )
+    quantity: Mapped[Decimal] = mapped_column(Numeric(12, 3), nullable=False)
+    reference_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    reference_id: Mapped[int | None] = mapped_column(Integer)
+    reference_label: Mapped[str | None] = mapped_column(String(255))
+    reserved_by_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="SET NULL")
+    )
+    reserved_date: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=datetime.now
+    )
+    expiry_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    status: Mapped[str] = mapped_column(String(20), default="active")
+    notes: Mapped[str | None] = mapped_column(Text)
+    company_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False
+    )
+
+    # Relationships
+    product: Mapped["Product"] = relationship("Product")
+    location: Mapped["StockLocation"] = relationship("StockLocation")
+    lot: Mapped["Lot | None"] = relationship("Lot")
+    reserved_by: Mapped["User | None"] = relationship("User")  # noqa: F821
+    company: Mapped["Company"] = relationship("Company")  # noqa: F821
+
+
+class ProductBarcode(Base):
+    __tablename__ = "product_barcodes"
+    __table_args__ = (
+        UniqueConstraint("barcode", name="uq_product_barcode"),
+    )
+
+    product_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("products.id", ondelete="CASCADE"), nullable=False
+    )
+    barcode: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    barcode_type: Mapped[str] = mapped_column(String(20), default="EAN13")
+    is_primary: Mapped[bool] = mapped_column(Boolean, default=False)
+    company_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False
+    )
+
+    # Relationships
+    product: Mapped["Product"] = relationship("Product", backref="barcodes")
     company: Mapped["Company"] = relationship("Company")  # noqa: F821
 
 

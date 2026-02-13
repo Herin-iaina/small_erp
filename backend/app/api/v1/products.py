@@ -5,19 +5,32 @@ from app.core.database import get_db
 from app.core.dependencies import PermissionChecker
 from app.models.user import User
 from app.schemas.stock import (
+    ProductAvailability,
+    ProductBarcodeCreate,
+    ProductBarcodeRead,
     ProductCreate,
     ProductRead,
     ProductStockSummary,
     ProductUpdate,
+    ConsumptionStats,
 )
 from app.services.product import (
     create_product,
     get_product,
+    get_product_availability,
     get_product_stock_summary,
     list_products,
     toggle_product_status,
     update_product,
 )
+from app.services.barcode import (
+    add_barcode,
+    list_barcodes,
+    delete_barcode,
+    lookup_by_barcode,
+)
+from app.services.replenishment import get_consumption_stats
+from app.services.stock_movement import get_fifo_order
 
 router = APIRouter(prefix="/products", tags=["Products"])
 
@@ -93,3 +106,71 @@ async def get_product_stock_endpoint(
     _: User = Depends(PermissionChecker("stock.view")),
 ):
     return await get_product_stock_summary(db, product_id)
+
+
+@router.get("/{product_id}/availability", response_model=ProductAvailability)
+async def get_product_availability_endpoint(
+    product_id: int,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(PermissionChecker("stock.view")),
+):
+    return await get_product_availability(db, product_id)
+
+
+@router.get("/{product_id}/consumption-stats", response_model=ConsumptionStats)
+async def get_consumption_stats_endpoint(
+    product_id: int,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(PermissionChecker("stock.view")),
+):
+    return await get_consumption_stats(db, product_id)
+
+
+@router.get("/{product_id}/fifo-order", response_model=list[dict])
+async def get_fifo_order_endpoint(
+    product_id: int,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(PermissionChecker("stock.view")),
+):
+    return await get_fifo_order(db, product_id)
+
+
+# --- Barcodes ---
+@router.get("/by-barcode/{barcode}", response_model=ProductRead)
+async def lookup_product_by_barcode(
+    barcode: str,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(PermissionChecker("stock.view")),
+):
+    product = await lookup_by_barcode(db, barcode)
+    return ProductRead.model_validate(product)
+
+
+@router.get("/{product_id}/barcodes", response_model=list[ProductBarcodeRead])
+async def list_product_barcodes(
+    product_id: int,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(PermissionChecker("stock.view")),
+):
+    barcodes = await list_barcodes(db, product_id)
+    return [ProductBarcodeRead.model_validate(b) for b in barcodes]
+
+
+@router.post("/{product_id}/barcodes", response_model=ProductBarcodeRead, status_code=201)
+async def add_product_barcode(
+    product_id: int,
+    body: ProductBarcodeCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("stock.create")),
+):
+    bc = await add_barcode(db, product_id, body, current_user)
+    return ProductBarcodeRead.model_validate(bc)
+
+
+@router.delete("/barcodes/{barcode_id}", status_code=204)
+async def delete_product_barcode(
+    barcode_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(PermissionChecker("stock.edit")),
+):
+    await delete_barcode(db, barcode_id, current_user)

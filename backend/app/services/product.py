@@ -187,3 +187,20 @@ async def get_product_stock_summary(
         "total_value": total_value,
         "by_location": by_location,
     }
+
+
+async def get_product_availability(
+    db: AsyncSession, product_id: int
+) -> dict:
+    """Return physical, reserved, and available stock for a product."""
+    product = await get_product(db, product_id)
+    stock_summary = await get_product_stock_summary(db, product_id)
+    return {
+        "product_id": product_id,
+        "product_name": product.name,
+        "sku": product.sku,
+        "physical_stock": stock_summary["total_quantity"],
+        "reserved_stock": stock_summary["total_reserved"],
+        "available_stock": stock_summary["total_available"],
+        "by_location": stock_summary["by_location"],
+    }

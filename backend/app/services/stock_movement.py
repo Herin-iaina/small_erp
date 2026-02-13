@@ -6,11 +6,55 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models.stock import Product, StockLevel, StockMovement
+from app.models.stock import Lot, Product, StockLevel, StockMovement
 from app.models.user import User
 from app.schemas.stock import StockMovementCreate, StockMovementUpdate
 from app.services.audit import log_action
 from app.utils.pagination import paginate
+
+
+async def get_fifo_order(db: AsyncSession, product_id: int) -> list[dict]:
+    """Return lots sorted by oldest entry date for FIFO."""
+    # Get lots with stock, ordered by first 'in' movement date
+    result = await db.execute(
+        select(
+            StockLevel.lot_id,
+            Lot.lot_number,
+            Lot.expiry_date,
+            StockLevel.location_id,
+            StockLevel.quantity,
+            StockLevel.reserved_quantity,
+            func.min(StockMovement.validated_at).label("first_entry"),
+        )
+        .join(Lot, StockLevel.lot_id == Lot.id)
+        .outerjoin(
+            StockMovement,
+            (StockMovement.product_id == StockLevel.product_id)
+            & (StockMovement.lot_id == StockLevel.lot_id)
+            & (StockMovement.movement_type == "in")
+            & (StockMovement.status == "validated"),
+        )
+        .where(
+            StockLevel.product_id == product_id,
+            StockLevel.quantity > 0,
+            StockLevel.lot_id.isnot(None),
+        )
+        .group_by(StockLevel.lot_id, Lot.lot_number, Lot.expiry_date, StockLevel.location_id, StockLevel.quantity, StockLevel.reserved_quantity)
+        .order_by("first_entry")
+    )
+    rows = result.all()
+    return [
+        {
+            "lot_id": row.lot_id,
+            "lot_number": row.lot_number,
+            "expiry_date": row.expiry_date.isoformat() if row.expiry_date else None,
+            "location_id": row.location_id,
+            "quantity": row.quantity,
+            "available_quantity": row.quantity - (row.reserved_quantity or Decimal(0)),
+            "first_entry_date": row.first_entry.isoformat() if row.first_entry else None,
+        }
+        for row in rows
+    ]
 
 
 async def _generate_reference(db: AsyncSession) -> str:

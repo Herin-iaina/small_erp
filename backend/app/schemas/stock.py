@@ -56,6 +56,7 @@ class ProductBase(BaseModel):
     max_stock_level: Decimal = Decimal(0)
     reorder_point: Decimal = Decimal(0)
     reorder_quantity: Decimal = Decimal(0)
+    optimal_order_quantity: Decimal = Decimal(0)
     weight: Decimal | None = None
     image_url: str | None = None
     lead_time_days: int = 0
@@ -82,6 +83,7 @@ class ProductUpdate(BaseModel):
     max_stock_level: Decimal | None = None
     reorder_point: Decimal | None = None
     reorder_quantity: Decimal | None = None
+    optimal_order_quantity: Decimal | None = None
     weight: Decimal | None = None
     image_url: str | None = None
     lead_time_days: int | None = None
@@ -91,6 +93,8 @@ class ProductRead(ProductBase):
     id: int
     company_id: int
     is_active: bool
+    average_daily_consumption: Decimal = Decimal(0)
+    abc_classification: str | None = None
     category: ProductCategoryRead | None = None
     created_at: datetime
     updated_at: datetime
@@ -431,6 +435,142 @@ class InventoryListRead(BaseModel):
 
 class InventoryRead(InventoryListRead):
     lines: list[InventoryLineRead] = []
+
+
+# --- StockReservation ---
+class StockReservationBase(BaseModel):
+    product_id: int
+    location_id: int
+    lot_id: int | None = None
+    quantity: Decimal
+    reference_type: str
+    reference_id: int | None = None
+    reference_label: str | None = None
+    expiry_date: datetime | None = None
+    notes: str | None = None
+
+
+class StockReservationCreate(StockReservationBase):
+    company_id: int
+
+
+class ReservationProductInfo(BaseModel):
+    id: int
+    sku: str
+    name: str
+    unit_of_measure: str
+
+    model_config = {"from_attributes": True}
+
+
+class ReservationLocationInfo(BaseModel):
+    id: int
+    code: str
+    name: str
+
+    model_config = {"from_attributes": True}
+
+
+class ReservationLotInfo(BaseModel):
+    id: int
+    lot_number: str
+
+    model_config = {"from_attributes": True}
+
+
+class ReservationUserInfo(BaseModel):
+    id: int
+    email: str
+    first_name: str
+    last_name: str
+
+    model_config = {"from_attributes": True}
+
+
+class StockReservationRead(BaseModel):
+    id: int
+    product_id: int
+    location_id: int
+    lot_id: int | None
+    quantity: Decimal
+    reference_type: str
+    reference_id: int | None
+    reference_label: str | None
+    reserved_by_id: int | None
+    reserved_date: datetime
+    expiry_date: datetime | None
+    status: str
+    notes: str | None
+    company_id: int
+    product: ReservationProductInfo | None = None
+    location: ReservationLocationInfo | None = None
+    lot: ReservationLotInfo | None = None
+    reserved_by: ReservationUserInfo | None = None
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class ReleaseByReferenceRequest(BaseModel):
+    reference_type: str
+    reference_id: int
+
+
+class ProductAvailability(BaseModel):
+    product_id: int
+    product_name: str
+    sku: str
+    physical_stock: Decimal
+    reserved_stock: Decimal
+    available_stock: Decimal
+    by_location: list[ProductStockLocationDetail] = []
+
+
+# --- ProductBarcode ---
+class ProductBarcodeBase(BaseModel):
+    barcode: str
+    barcode_type: str = "EAN13"
+    is_primary: bool = False
+
+
+class ProductBarcodeCreate(ProductBarcodeBase):
+    pass
+
+
+class ProductBarcodeRead(ProductBarcodeBase):
+    id: int
+    product_id: int
+    company_id: int
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+# --- Replenishment ---
+class ReplenishmentSuggestion(BaseModel):
+    product_id: int
+    product_name: str
+    sku: str
+    category_name: str | None = None
+    current_stock: Decimal
+    reserved_stock: Decimal
+    available_stock: Decimal
+    reorder_point: Decimal
+    suggested_quantity: Decimal
+    lead_time_days: int
+    estimated_cost: Decimal
+    abc_classification: str | None = None
+
+
+class ConsumptionStats(BaseModel):
+    product_id: int
+    avg_7d: Decimal
+    avg_30d: Decimal
+    avg_90d: Decimal
+    total_out_7d: Decimal
+    total_out_30d: Decimal
+    total_out_90d: Decimal
 
 
 # --- Dashboard ---

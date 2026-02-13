@@ -8,6 +8,7 @@ from app.schemas.stock import StockMovementCreate, StockMovementRead, StockMovem
 from app.services.stock_movement import (
     cancel_movement,
     create_movement,
+    get_fifo_order,
     get_movement,
     list_movements,
     update_movement,

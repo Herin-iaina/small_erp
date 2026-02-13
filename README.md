@@ -108,12 +108,15 @@ ERP/
 │       │   ├── roles.py      # CRUD roles + permissions dispo
 │       │   ├── third_parties.py # CRUD tiers + addresses + contacts
 │       │   ├── categories.py    # CRUD categories produits
-│       │   ├── products.py      # CRUD produits + stock summary
+│       │   ├── products.py      # CRUD produits + stock + barcodes + FIFO
 │       │   ├── warehouses.py    # CRUD entrepots + emplacements
 │       │   ├── lots.py          # CRUD lots (tracabilite)
 │       │   ├── stock_movements.py # Mouvements stock (CRUD + validation)
 │       │   ├── inventories.py   # Inventaires physiques (CRUD + lignes)
-│       │   └── stock_dashboard.py # KPIs, alertes, valorisation
+│       │   ├── stock_dashboard.py # KPIs, alertes, valorisation
+│       │   ├── reservations.py  # Reservations de stock
+│       │   ├── replenishment.py # Suggestions reappro + ABC
+│       │   └── traceability.py  # Historique + tracabilite lot + snapshot
 │       └── services/         # Logique metier
 │           ├── product.py        # Produits + stock summary
 │           ├── warehouse.py      # Entrepots + emplacements
@@ -121,6 +124,10 @@ ERP/
 │           ├── stock_movement.py # Mouvements + validation + CUMP
 │           ├── inventory.py      # Inventaires + lignes
 │           ├── stock_dashboard.py # KPIs, alertes, valorisation
+│           ├── reservation.py     # Reservations stock
+│           ├── barcode.py         # Gestion codes-barres
+│           ├── replenishment.py   # Reappro + ABC + stats conso
+│           ├── traceability.py    # Historique + tracabilite lot
 │           └── ...
 └── frontend/
     ├── Dockerfile
@@ -129,9 +136,9 @@ ERP/
         │   ├── ui/           # Shadcn (Button, Input, Card, Label)
         │   ├── layout/       # Sidebar, Header, MainLayout
         │   ├── auth/         # LoginForm, ProtectedRoute
-        │   └── stock/        # FormDialogs (Product, Lot, Movement, Location, Inventory)
+        │   └── stock/        # FormDialogs (Product, Lot, Movement, Location, Inventory, Reservation)
         ├── pages/
-        │   ├── stock/        # Dashboard, Products, Warehouses, Lots, Movements, Inventories
+        │   ├── stock/        # Dashboard, Products, Warehouses, Lots, Movements, Inventories, Reservations, Reappro, Scanner
         │   └── ...           # Login, Dashboard, Users, Companies
         ├── stores/           # Zustand (auth, ui)
         ├── hooks/            # useAuth, usePermissions, useDataFetch
@@ -200,6 +207,8 @@ Le module stock gere l'ensemble du cycle de vie des produits : catalogage, stock
 | **StockLevel** | Niveaux de stock en temps reel par produit/emplacement/lot (quantite, reserve, disponible) |
 | **Inventory** | Inventaires physiques : brouillon → en cours → valide/annule |
 | **InventoryLine** | Lignes d'inventaire : quantite attendue vs comptee, ecart calcule |
+| **StockReservation** | Reservations de stock par reference (commande vente, production, manuel) avec expiration |
+| **ProductBarcode** | Codes-barres multiples par produit (EAN13, EAN8, UPC, CODE128, QR) avec barcode primaire |
 
 ### Flux de mouvements
 
@@ -230,16 +239,51 @@ nouveau_cump = (stock_actuel * ancien_cump + quantite_entree * cout_unitaire) / 
 3. Demarrer l'inventaire → saisir les quantites comptees
 4. Valider → les ecarts generent automatiquement des mouvements d'ajustement
 
+### Reservations de stock
+
+Les reservations permettent de bloquer du stock pour des references metier (commandes de vente, ordres de production, reservations manuelles). Le stock reserve est deduit de la quantite disponible sans affecter la quantite physique.
+
+- Creation avec validation de disponibilite
+- Liberation unitaire ou par reference (ex: liberer toutes les reservations d'une commande)
+- Gestion de l'expiration automatique
+
+### Reapprovisionnement intelligent
+
+- **Suggestions** : produits dont le stock disponible <= point de reapprovisionnement
+- **Calcul automatique des seuils** : `reorder_point = consommation_moyenne_jour * lead_time + stock_mini`
+- **Classification ABC** : Pareto (A=80%, B=15%, C=5%) basee sur la valeur du stock
+- **Statistiques de consommation** : moyennes 7j, 30j, 90j calculees depuis les mouvements valides
+
+### Tracabilite avancee
+
+- **Historique mouvements par produit** : filtres par date, type, emplacement, avec pagination
+- **Tracabilite complete par lot** : origine, destinations, emplacements actuels, totaux entrees/sorties
+- **Snapshot historique** : reconstruction du stock a une date donnee par replay des mouvements
+
+### Valorisation FIFO
+
+Endpoint `/products/{id}/fifo-order` : lots tries par date d'entree la plus ancienne, avec quantites et emplacements.
+
+### Gestion codes-barres
+
+- Codes-barres multiples par produit (EAN13, EAN8, UPC, CODE128, QR)
+- Recherche produit par scan de code-barres
+- Code-barres primaire par produit
+
 ### Pages frontend
 
 | Page | Route | Description |
 |------|-------|-------------|
 | Tableau de bord | `/stock` | KPIs (valeur stock, alertes, ruptures), graphiques |
+| Categories | `/stock/categories` | CRUD categories hierarchiques (parent/enfant) |
 | Articles | `/stock/products` | CRUD produits avec colonne stock temps reel |
 | Entrepots | `/stock/warehouses` | CRUD entrepots + emplacements imbriques |
 | Lots | `/stock/lots` | CRUD lots avec tracabilite fournisseur |
 | Mouvements | `/stock/movements` | CRUD mouvements + validation/annulation |
 | Inventaires | `/stock/inventories` | Liste des inventaires + detail avec saisie |
+| Reservations | `/stock/reservations` | Reservations de stock par reference + liberation |
+| Reapprovisionnement | `/stock/replenishment` | Suggestions, seuils, classification ABC |
+| Scanner | `/stock/barcode-scanner` | Recherche produit par code-barres + detail stock |
 
 ## Endpoints API (v1)
 
@@ -295,6 +339,25 @@ nouveau_cump = (stock_actuel * ancien_cump + quantite_entree * cout_unitaire) / 
 | GET | `/api/v1/stock-dashboard/alerts` | Alertes stock bas / rupture |
 | GET | `/api/v1/stock-dashboard/valuation` | Valorisation stock |
 | GET | `/api/v1/stock-dashboard/product-stock-totals` | Totaux stock par produit |
+| **Reservations** | | |
+| GET/POST | `/api/v1/stock/reservations` | Lister / creer reservations |
+| DELETE | `/api/v1/stock/reservations/{id}` | Liberer reservation |
+| POST | `/api/v1/stock/reservations/release` | Liberer par reference |
+| **Reapprovisionnement** | | |
+| GET | `/api/v1/stock/replenishment-suggestions` | Suggestions de reapprovisionnement |
+| POST | `/api/v1/stock/calculate-reorder-points` | Recalculer les seuils |
+| POST | `/api/v1/stock/calculate-abc-classification` | Classifier ABC |
+| **Tracabilite** | | |
+| GET | `/api/v1/stock/products/{id}/movement-history` | Historique mouvements produit |
+| GET | `/api/v1/stock/lots/{id}/traceability` | Tracabilite complete lot |
+| GET | `/api/v1/stock/snapshot` | Snapshot stock a une date |
+| **Codes-barres** | | |
+| GET | `/api/v1/products/{id}/availability` | Disponibilite produit |
+| GET | `/api/v1/products/{id}/consumption-stats` | Stats consommation |
+| GET | `/api/v1/products/{id}/fifo-order` | Ordre FIFO des lots |
+| GET/POST | `/api/v1/products/{id}/barcodes` | Lister / ajouter codes-barres |
+| DELETE | `/api/v1/products/barcodes/{id}` | Supprimer code-barres |
+| GET | `/api/v1/products/by-barcode/{barcode}` | Recherche par code-barres |
 
 ## Prochaines etapes
 

@@ -115,6 +115,10 @@ export function LocationFormDialog({ open, onOpenChange, warehouseId, location, 
               <SelectItem value="receiving">Reception</SelectItem>
               <SelectItem value="shipping">Expedition</SelectItem>
               <SelectItem value="production">Production</SelectItem>
+              <SelectItem value="transit">Transit</SelectItem>
+              <SelectItem value="customer">Client</SelectItem>
+              <SelectItem value="defective">Defectueux</SelectItem>
+              <SelectItem value="returns">Retours</SelectItem>
             </SelectContent>
           </Select>
         </div>

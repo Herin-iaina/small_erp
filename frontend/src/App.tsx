@@ -18,6 +18,9 @@ import LotsPage from "@/pages/stock/LotsPage";
 import InventoriesPage from "@/pages/stock/InventoriesPage";
 import InventoryDetailPage from "@/pages/stock/InventoryDetailPage";
 import CategoriesPage from "@/pages/stock/CategoriesPage";
+import ReservationsPage from "@/pages/stock/ReservationsPage";
+import ReplenishmentPage from "@/pages/stock/ReplenishmentPage";
+import BarcodeScannerPage from "@/pages/stock/BarcodeScannerPage";
 import NotFoundPage from "@/pages/NotFound";
 
 export default function App() {
@@ -135,6 +138,30 @@ export default function App() {
             element={
               <ProtectedRoute permission="stock.view">
                 <InventoryDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="stock/reservations"
+            element={
+              <ProtectedRoute permission="stock.view">
+                <ReservationsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="stock/replenishment"
+            element={
+              <ProtectedRoute permission="stock.view">
+                <ReplenishmentPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="stock/barcode-scanner"
+            element={
+              <ProtectedRoute permission="stock.view">
+                <BarcodeScannerPage />
               </ProtectedRoute>
             }
           />

@@ -31,6 +31,9 @@ export interface Product {
   max_stock_level: number;
   reorder_point: number;
   reorder_quantity: number;
+  optimal_order_quantity: number;
+  average_daily_consumption: number;
+  abc_classification: string | null;
   weight: number | null;
   image_url: string | null;
   lead_time_days: number;
@@ -204,4 +207,77 @@ export interface ProductStockSummary {
   total_available: number;
   total_value: number;
   by_location: ProductStockLocationDetail[];
+}
+
+// --- Stock Reservation ---
+export interface StockReservation {
+  id: number;
+  product_id: number;
+  location_id: number;
+  lot_id: number | null;
+  quantity: number;
+  reference_type: string;
+  reference_id: number | null;
+  reference_label: string | null;
+  reserved_by_id: number | null;
+  reserved_date: string;
+  expiry_date: string | null;
+  status: string;
+  notes: string | null;
+  company_id: number;
+  product: { id: number; sku: string; name: string; unit_of_measure: string } | null;
+  location: { id: number; code: string; name: string } | null;
+  lot: { id: number; lot_number: string } | null;
+  reserved_by: { id: number; email: string; first_name: string; last_name: string } | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// --- Product Barcode ---
+export interface ProductBarcode {
+  id: number;
+  product_id: number;
+  barcode: string;
+  barcode_type: string;
+  is_primary: boolean;
+  company_id: number;
+  created_at: string;
+}
+
+// --- Product Availability ---
+export interface ProductAvailability {
+  product_id: number;
+  product_name: string;
+  sku: string;
+  physical_stock: number;
+  reserved_stock: number;
+  available_stock: number;
+  by_location: ProductStockLocationDetail[];
+}
+
+// --- Replenishment ---
+export interface ReplenishmentSuggestion {
+  product_id: number;
+  product_name: string;
+  sku: string;
+  category_name: string | null;
+  current_stock: number;
+  reserved_stock: number;
+  available_stock: number;
+  reorder_point: number;
+  suggested_quantity: number;
+  lead_time_days: number;
+  estimated_cost: number;
+  abc_classification: string | null;
+}
+
+// --- Consumption Stats ---
+export interface ConsumptionStats {
+  product_id: number;
+  avg_7d: number;
+  avg_30d: number;
+  avg_90d: number;
+  total_out_7d: number;
+  total_out_30d: number;
+  total_out_90d: number;
 }

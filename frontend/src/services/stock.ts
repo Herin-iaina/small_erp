@@ -4,14 +4,19 @@ import type {
   Product,
   ProductCategory,
   ProductStockSummary,
+  ProductAvailability,
+  ProductBarcode,
   Warehouse,
   StockLocation,
   Lot,
   StockMovement,
+  StockReservation,
   Inventory,
   StockKPIs,
   StockAlert,
   StockValuationItem,
+  ReplenishmentSuggestion,
+  ConsumptionStats,
 } from "@/types/stock";
 
 // --- Categories ---
@@ -305,5 +310,129 @@ export async function getStockValuation(companyId: number): Promise<StockValuati
 
 export async function getProductStockTotals(companyId: number): Promise<Record<string, number>> {
   const { data } = await api.get("/stock-dashboard/product-stock-totals", { params: { company_id: companyId } });
+  return data;
+}
+
+// --- Product Availability & Barcodes ---
+
+export async function getProductAvailability(id: number): Promise<ProductAvailability> {
+  const { data } = await api.get(`/products/${id}/availability`);
+  return data;
+}
+
+export async function getConsumptionStats(id: number): Promise<ConsumptionStats> {
+  const { data } = await api.get(`/products/${id}/consumption-stats`);
+  return data;
+}
+
+export async function lookupByBarcode(barcode: string): Promise<Product> {
+  const { data } = await api.get(`/products/by-barcode/${encodeURIComponent(barcode)}`);
+  return data;
+}
+
+export async function listProductBarcodes(productId: number): Promise<ProductBarcode[]> {
+  const { data } = await api.get(`/products/${productId}/barcodes`);
+  return data;
+}
+
+export async function addProductBarcode(productId: number, body: { barcode: string; barcode_type?: string; is_primary?: boolean }): Promise<ProductBarcode> {
+  const { data } = await api.post(`/products/${productId}/barcodes`, body);
+  return data;
+}
+
+export async function deleteProductBarcode(barcodeId: number): Promise<void> {
+  await api.delete(`/products/barcodes/${barcodeId}`);
+}
+
+// --- Stock Reservations ---
+
+export interface ReservationListParams {
+  [key: string]: unknown;
+  company_id: number;
+  product_id?: number;
+  status?: string;
+  reference_type?: string;
+  reference_id?: number;
+  search?: string;
+  page?: number;
+  page_size?: number;
+}
+
+export async function listReservations(params: ReservationListParams): Promise<PaginatedResponse<StockReservation>> {
+  const { data } = await api.get("/stock/reservations", { params });
+  return data;
+}
+
+export async function createReservation(body: {
+  product_id: number;
+  location_id: number;
+  lot_id?: number | null;
+  quantity: number;
+  reference_type: string;
+  reference_id?: number | null;
+  reference_label?: string | null;
+  expiry_date?: string | null;
+  notes?: string | null;
+  company_id: number;
+}): Promise<StockReservation> {
+  const { data } = await api.post("/stock/reservations", body);
+  return data;
+}
+
+export async function releaseReservation(id: number): Promise<void> {
+  await api.delete(`/stock/reservations/${id}`);
+}
+
+export async function releaseByReference(referenceType: string, referenceId: number): Promise<{ released_count: number }> {
+  const { data } = await api.post("/stock/reservations/release", { reference_type: referenceType, reference_id: referenceId });
+  return data;
+}
+
+// --- Replenishment ---
+
+export async function getReplenishmentSuggestions(companyId: number, params?: { category_id?: number; abc_classification?: string }): Promise<ReplenishmentSuggestion[]> {
+  const { data } = await api.get("/stock/replenishment-suggestions", { params: { company_id: companyId, ...params } });
+  return data;
+}
+
+export async function calculateReorderPoints(companyId: number): Promise<{ updated_count: number }> {
+  const { data } = await api.post("/stock/calculate-reorder-points", null, { params: { company_id: companyId } });
+  return data;
+}
+
+export async function calculateAbcClassification(companyId: number): Promise<{ classifications: Record<string, number> }> {
+  const { data } = await api.post("/stock/calculate-abc-classification", null, { params: { company_id: companyId } });
+  return data;
+}
+
+// --- Traceability ---
+
+export async function getProductMovementHistory(productId: number, params?: {
+  date_from?: string;
+  date_to?: string;
+  movement_type?: string;
+  location_id?: number;
+  page?: number;
+  page_size?: number;
+}): Promise<PaginatedResponse<StockMovement>> {
+  const { data } = await api.get(`/stock/products/${productId}/movement-history`, { params });
+  return data;
+}
+
+export async function getLotTraceability(lotId: number): Promise<{
+  lot: { id: number; lot_number: string; manufacturing_date: string | null; expiry_date: string | null; best_before_date: string | null; notes: string | null };
+  product: { id: number; sku: string; name: string } | null;
+  supplier: { id: number; name: string; code: string } | null;
+  movements: StockMovement[];
+  current_locations: { location_id: number; location_name: string | null; quantity: number; reserved_quantity: number }[];
+  total_in: number;
+  total_out: number;
+}> {
+  const { data } = await api.get(`/stock/lots/${lotId}/traceability`);
+  return data;
+}
+
+export async function getStockSnapshot(companyId: number, date: string): Promise<{ product_id: number; product_name: string; sku: string; quantity: number }[]> {
+  const { data } = await api.get("/stock/snapshot", { params: { company_id: companyId, date } });
   return data;
 }
