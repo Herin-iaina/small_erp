@@ -10,12 +10,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAuthStore } from "@/stores/authStore";
+import { useCurrency } from "@/hooks/useCurrency";
 import { getStockKPIs, getStockAlerts } from "@/services/stock";
 import type { StockKPIs, StockAlert } from "@/types/stock";
 import { Loader2 } from "lucide-react";
 
 export default function StockDashboard() {
   const companyId = useAuthStore((s) => s.user?.company_id);
+  const { formatCurrency } = useCurrency();
   const [kpis, setKpis] = useState<StockKPIs | null>(null);
   const [alerts, setAlerts] = useState<StockAlert[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,7 +43,7 @@ export default function StockDashboard() {
 
   const kpiCards = [
     { label: "Articles", value: kpis?.total_products ?? 0, icon: Package, color: "text-blue-600" },
-    { label: "Valeur stock", value: `${Number(kpis?.total_stock_value ?? 0).toFixed(2)} €`, icon: DollarSign, color: "text-green-600" },
+    { label: "Valeur stock", value: formatCurrency(kpis?.total_stock_value ?? 0), icon: DollarSign, color: "text-green-600" },
     { label: "Stock bas", value: kpis?.low_stock_count ?? 0, icon: TrendingDown, color: "text-orange-600" },
     { label: "Ruptures", value: kpis?.out_of_stock_count ?? 0, icon: AlertTriangle, color: "text-red-600" },
     { label: "DLC proches", value: kpis?.expiring_soon_count ?? 0, icon: Clock, color: "text-purple-600" },

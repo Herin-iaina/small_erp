@@ -18,9 +18,11 @@ import { toast } from "@/hooks/use-toast";
 import { listProducts, toggleProductStatus, getProductStockTotals, type ProductListParams } from "@/services/stock";
 import type { Product } from "@/types/stock";
 import { useAuthStore } from "@/stores/authStore";
+import { useCurrency } from "@/hooks/useCurrency";
 
 export default function ProductsPage() {
   const companyId = useAuthStore((s) => s.user?.company_id);
+  const { formatCurrency } = useCurrency();
   const [formOpen, setFormOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -62,8 +64,8 @@ export default function ProductsPage() {
       },
       className: "text-right",
     },
-    { key: "sale_price", label: "Prix vente", render: (p) => `${Number(p.sale_price).toFixed(2)} €`, className: "text-right" },
-    { key: "cost_price", label: "Prix revient", render: (p) => `${Number(p.cost_price).toFixed(2)} €`, className: "text-right" },
+    { key: "sale_price", label: "Prix vente", render: (p) => formatCurrency(p.sale_price), className: "text-right" },
+    { key: "cost_price", label: "Prix revient", render: (p) => formatCurrency(p.cost_price), className: "text-right" },
     { key: "is_active", label: "Statut", render: (p) => <StatusBadge active={p.is_active} /> },
   ];
 

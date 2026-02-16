@@ -5,10 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
+import { useCurrency } from "@/hooks/useCurrency";
 import { lookupByBarcode, getProductStock } from "@/services/stock";
 import type { Product, ProductStockSummary } from "@/types/stock";
 
 export default function BarcodeScannerPage() {
+  const { formatCurrency } = useCurrency();
   const [barcode, setBarcode] = useState("");
   const [product, setProduct] = useState<Product | null>(null);
   const [stock, setStock] = useState<ProductStockSummary | null>(null);
@@ -78,9 +80,9 @@ export default function BarcodeScannerPage() {
                 <span className="text-muted-foreground">Categorie</span>
                 <span>{product.category?.name || "-"}</span>
                 <span className="text-muted-foreground">Prix de vente</span>
-                <span>{Number(product.sale_price).toLocaleString("fr-FR", { style: "currency", currency: "EUR" })}</span>
+                <span>{formatCurrency(product.sale_price)}</span>
                 <span className="text-muted-foreground">Prix de revient</span>
-                <span>{Number(product.cost_price).toLocaleString("fr-FR", { style: "currency", currency: "EUR" })}</span>
+                <span>{formatCurrency(product.cost_price)}</span>
               </div>
             </CardContent>
           </Card>
@@ -131,7 +133,7 @@ export default function BarcodeScannerPage() {
                 )}
 
                 <div className="text-right text-sm text-muted-foreground">
-                  Valeur: {Number(stock.total_value).toLocaleString("fr-FR", { style: "currency", currency: "EUR" })}
+                  Valeur: {formatCurrency(stock.total_value)}
                 </div>
               </CardContent>
             </Card>

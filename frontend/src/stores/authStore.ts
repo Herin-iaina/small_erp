@@ -1,10 +1,12 @@
 import { create } from "zustand";
 import type { UserMe } from "@/types/user";
 import { fetchMe, login as loginApi, logout as logoutApi } from "@/services/auth";
+import { getCompany } from "@/services/companies";
 import type { LoginRequest } from "@/types/auth";
 
 interface AuthState {
   user: UserMe | null;
+  companyCurrency: string;
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
@@ -13,8 +15,19 @@ interface AuthState {
   loadUser: () => Promise<void>;
 }
 
+async function fetchCompanyCurrency(companyId: number | null | undefined): Promise<string> {
+  if (!companyId) return "EUR";
+  try {
+    const company = await getCompany(companyId);
+    return company.currency || "EUR";
+  } catch {
+    return "EUR";
+  }
+}
+
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
+  companyCurrency: "EUR",
   isAuthenticated: !!localStorage.getItem("access_token"),
   isLoading: false,
   error: null,
@@ -24,7 +37,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       await loginApi(credentials);
       const user = await fetchMe();
-      set({ user, isAuthenticated: true, isLoading: false });
+      const companyCurrency = await fetchCompanyCurrency(user.company_id);
+      set({ user, companyCurrency, isAuthenticated: true, isLoading: false });
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : "Authentication failed";
@@ -34,7 +48,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   logout: () => {
-    set({ user: null, isAuthenticated: false });
+    set({ user: null, companyCurrency: "EUR", isAuthenticated: false });
     logoutApi();
   },
 
@@ -43,9 +57,10 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ isLoading: true });
     try {
       const user = await fetchMe();
-      set({ user, isAuthenticated: true, isLoading: false });
+      const companyCurrency = await fetchCompanyCurrency(user.company_id);
+      set({ user, companyCurrency, isAuthenticated: true, isLoading: false });
     } catch {
-      set({ user: null, isAuthenticated: false, isLoading: false });
+      set({ user: null, companyCurrency: "EUR", isAuthenticated: false, isLoading: false });
       localStorage.removeItem("access_token");
       localStorage.removeItem("refresh_token");
     }

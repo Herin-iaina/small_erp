@@ -26,13 +26,10 @@ import {
 } from "@/services/stock";
 import type { ReplenishmentSuggestion } from "@/types/stock";
 import { useAuthStore } from "@/stores/authStore";
+import { useCurrency } from "@/hooks/useCurrency";
 
 function formatNumber(value: number): string {
   return value.toLocaleString("fr-FR");
-}
-
-function formatCurrency(value: number): string {
-  return value.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function getAbcBadgeVariant(abc: string | null): "default" | "secondary" | "outline" {
@@ -50,6 +47,7 @@ function getAbcBadgeVariant(abc: string | null): "default" | "secondary" | "outl
 
 export default function ReplenishmentPage() {
   const companyId = useAuthStore((s) => s.user?.company_id);
+  const { formatCurrency } = useCurrency();
   const [suggestions, setSuggestions] = useState<ReplenishmentSuggestion[]>([]);
   const [loading, setLoading] = useState(true);
   const [categoryNameFilter, setCategoryNameFilter] = useState<string>("all");
@@ -190,7 +188,7 @@ export default function ReplenishmentPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatCurrency(totalEstimatedCost)} &euro;
+              {formatCurrency(totalEstimatedCost)}
             </div>
           </CardContent>
         </Card>
@@ -274,7 +272,7 @@ export default function ReplenishmentPage() {
                     <TableCell className="text-right">{formatNumber(s.reorder_point)}</TableCell>
                     <TableCell className="text-right font-semibold">{formatNumber(s.suggested_quantity)}</TableCell>
                     <TableCell className="text-right">{s.lead_time_days}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(s.estimated_cost)} &euro;</TableCell>
+                    <TableCell className="text-right">{formatCurrency(s.estimated_cost)}</TableCell>
                     <TableCell>
                       {s.abc_classification ? (
                         <Badge variant={getAbcBadgeVariant(s.abc_classification)}>

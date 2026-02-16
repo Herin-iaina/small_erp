@@ -342,7 +342,7 @@ export function CompanyFormDialog({
             </div>
             <div className="space-y-2">
               <Label htmlFor="sale_validation_threshold">
-                Seuil validation vente (€)
+                Seuil validation vente ({form.currency})
               </Label>
               <Input
                 id="sale_validation_threshold"
