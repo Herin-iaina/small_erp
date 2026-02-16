@@ -238,6 +238,12 @@ class LotRead(LotBase):
     model_config = {"from_attributes": True}
 
 
+class LotReadWithStock(LotRead):
+    total_quantity: Decimal = Decimal(0)
+    total_reserved: Decimal = Decimal(0)
+    total_available: Decimal = Decimal(0)
+
+
 # --- StockLevel ---
 class StockLevelRead(BaseModel):
     id: int

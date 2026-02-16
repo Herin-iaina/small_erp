@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends, Query
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.dependencies import PermissionChecker
+from app.models.stock import Product
 from app.models.user import User
 from app.schemas.stock import (
     ProductAvailability,
@@ -66,6 +68,21 @@ async def create_product_endpoint(
 ):
     product = await create_product(db, body, current_user)
     return ProductRead.model_validate(product)
+
+
+@router.get("/uom-values", response_model=list[str])
+async def list_uom_values(
+    company_id: int = Query(...),
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(PermissionChecker("stock.view")),
+):
+    result = await db.execute(
+        select(Product.unit_of_measure)
+        .where(Product.company_id == company_id, Product.is_active.is_(True))
+        .distinct()
+        .order_by(Product.unit_of_measure)
+    )
+    return [row[0] for row in result.all()]
 
 
 @router.get("/{product_id}", response_model=ProductRead)

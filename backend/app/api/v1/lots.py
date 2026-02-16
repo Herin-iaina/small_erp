@@ -4,7 +4,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.dependencies import PermissionChecker
 from app.models.user import User
-from app.schemas.stock import LotCreate, LotRead, LotUpdate
+from decimal import Decimal
+
+from app.schemas.stock import LotCreate, LotRead, LotReadWithStock, LotUpdate
 from app.services.lot import create_lot, get_lot, list_lots, update_lot
 
 router = APIRouter(prefix="/lots", tags=["Lots"])
@@ -28,7 +30,16 @@ async def list_lots_endpoint(
         expiring_within_days=expiring_within_days,
         search=search, page=page, page_size=page_size,
     )
-    result["items"] = [LotRead.model_validate(l) for l in result["items"]]
+    stock_map = result.pop("stock_map", {})
+    items = []
+    for lot in result["items"]:
+        lot_data = LotReadWithStock.model_validate(lot)
+        qty, reserved = stock_map.get(lot.id, (Decimal(0), Decimal(0)))
+        lot_data.total_quantity = qty
+        lot_data.total_reserved = reserved
+        lot_data.total_available = qty - reserved
+        items.append(lot_data)
+    result["items"] = items
     return result
 
 

@@ -19,6 +19,8 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
+  defaultMovementType?: string;
+  defaultProductId?: number;
 }
 
 interface Form {
@@ -45,7 +47,7 @@ const defaultForm: Form = {
   notes: "",
 };
 
-export function MovementFormDialog({ open, onOpenChange, onSuccess }: Props) {
+export function MovementFormDialog({ open, onOpenChange, onSuccess, defaultMovementType, defaultProductId }: Props) {
   const [form, setForm] = useState<Form>(defaultForm);
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
@@ -54,7 +56,11 @@ export function MovementFormDialog({ open, onOpenChange, onSuccess }: Props) {
 
   useEffect(() => {
     if (!open || !companyId) return;
-    setForm(defaultForm);
+    setForm({
+      ...defaultForm,
+      movement_type: defaultMovementType || defaultForm.movement_type,
+      product_id: defaultProductId ? defaultProductId.toString() : "",
+    });
     listProducts({ company_id: companyId, page_size: 200, is_active: true })
       .then((r) => setProducts(r.items))
       .catch(() => {});
@@ -115,7 +121,7 @@ export function MovementFormDialog({ open, onOpenChange, onSuccess }: Props) {
       <div className="grid gap-4">
         <div className="space-y-2">
           <Label>Type *</Label>
-          <Select value={form.movement_type} onValueChange={(v) => updateField("movement_type", v)}>
+          <Select value={form.movement_type} onValueChange={(v) => updateField("movement_type", v)} disabled={!!defaultMovementType}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="in">Entree</SelectItem>
@@ -127,7 +133,7 @@ export function MovementFormDialog({ open, onOpenChange, onSuccess }: Props) {
         </div>
         <div className="space-y-2">
           <Label>Article *</Label>
-          <Select value={form.product_id} onValueChange={(v) => updateField("product_id", v)}>
+          <Select value={form.product_id} onValueChange={(v) => updateField("product_id", v)} disabled={!!defaultProductId}>
             <SelectTrigger><SelectValue placeholder="Selectionner un article" /></SelectTrigger>
             <SelectContent>
               {products.map((p) => (

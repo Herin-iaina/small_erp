@@ -93,6 +93,16 @@ export async function getProductStock(id: number): Promise<ProductStockSummary> 
   return data;
 }
 
+export async function listUomValues(companyId: number): Promise<string[]> {
+  const { data } = await api.get("/products/uom-values", { params: { company_id: companyId } });
+  return data;
+}
+
+export async function listSuppliers(companyId: number): Promise<{ id: number; name: string; code: string }[]> {
+  const { data } = await api.get("/third-parties", { params: { company_id: companyId, is_supplier: true, page_size: 200 } });
+  return data.items;
+}
+
 // --- Warehouses ---
 
 export interface WarehouseListParams {

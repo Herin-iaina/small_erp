@@ -1,11 +1,12 @@
 from datetime import date, timedelta
+from decimal import Decimal
 
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models.stock import Lot
+from app.models.stock import Lot, StockLevel
 from app.models.user import User
 from app.schemas.stock import LotCreate, LotUpdate
 from app.services.audit import log_action
@@ -90,7 +91,27 @@ async def list_lots(
         )
     if search:
         query = query.where(Lot.lot_number.ilike(f"%{search}%"))
-    return await paginate(db, query, page, page_size)
+    result = await paginate(db, query, page, page_size)
+
+    # Aggregate stock quantities per lot
+    lot_ids = [lot.id for lot in result["items"]]
+    stock_map: dict[int, tuple[Decimal, Decimal]] = {}
+    if lot_ids:
+        stock_result = await db.execute(
+            select(
+                StockLevel.lot_id,
+                func.coalesce(func.sum(StockLevel.quantity), 0).label("total_quantity"),
+                func.coalesce(func.sum(StockLevel.reserved_quantity), 0).label("total_reserved"),
+            )
+            .where(StockLevel.lot_id.in_(lot_ids))
+            .group_by(StockLevel.lot_id)
+        )
+        stock_map = {
+            row.lot_id: (row.total_quantity, row.total_reserved)
+            for row in stock_result.all()
+        }
+    result["stock_map"] = stock_map
+    return result
 
 
 async def update_lot(

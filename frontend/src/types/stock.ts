@@ -86,6 +86,9 @@ export interface Lot {
   is_active: boolean;
   product: { id: number; sku: string; name: string } | null;
   supplier: { id: number; name: string; code: string } | null;
+  total_quantity?: number;
+  total_reserved?: number;
+  total_available?: number;
   created_at: string;
   updated_at: string;
 }

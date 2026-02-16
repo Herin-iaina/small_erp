@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { createLot, updateLot, listProducts } from "@/services/stock";
+import { createLot, updateLot, listProducts, listSuppliers } from "@/services/stock";
 import type { Lot, Product } from "@/types/stock";
 import { useAuthStore } from "@/stores/authStore";
 
@@ -25,6 +25,7 @@ interface Props {
 interface Form {
   product_id: string;
   lot_number: string;
+  supplier_id: string;
   expiry_date: string;
   best_before_date: string;
   manufacturing_date: string;
@@ -34,6 +35,7 @@ interface Form {
 const defaultForm: Form = {
   product_id: "",
   lot_number: "",
+  supplier_id: "",
   expiry_date: "",
   best_before_date: "",
   manufacturing_date: "",
@@ -44,6 +46,7 @@ export function LotFormDialog({ open, onOpenChange, lot, onSuccess }: Props) {
   const [form, setForm] = useState<Form>(defaultForm);
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
+  const [suppliers, setSuppliers] = useState<{ id: number; name: string; code: string }[]>([]);
   const companyId = useAuthStore((s) => s.user?.company_id);
 
   useEffect(() => {
@@ -51,11 +54,15 @@ export function LotFormDialog({ open, onOpenChange, lot, onSuccess }: Props) {
     listProducts({ company_id: companyId, page_size: 200, is_active: true })
       .then((r) => setProducts(r.items))
       .catch(() => {});
+    listSuppliers(companyId)
+      .then(setSuppliers)
+      .catch(() => {});
     setForm(
       lot
         ? {
             product_id: lot.product_id.toString(),
             lot_number: lot.lot_number,
+            supplier_id: lot.supplier_id ? lot.supplier_id.toString() : "",
             expiry_date: lot.expiry_date ?? "",
             best_before_date: lot.best_before_date ?? "",
             manufacturing_date: lot.manufacturing_date ?? "",
@@ -74,6 +81,7 @@ export function LotFormDialog({ open, onOpenChange, lot, onSuccess }: Props) {
     try {
       const payload = {
         lot_number: form.lot_number,
+        supplier_id: form.supplier_id ? Number(form.supplier_id) : null,
         expiry_date: form.expiry_date || null,
         best_before_date: form.best_before_date || null,
         manufacturing_date: form.manufacturing_date || null,
@@ -123,6 +131,20 @@ export function LotFormDialog({ open, onOpenChange, lot, onSuccess }: Props) {
         <div className="space-y-2">
           <Label>Numero de lot *</Label>
           <Input value={form.lot_number} onChange={(e) => updateField("lot_number", e.target.value)} required />
+        </div>
+        <div className="space-y-2">
+          <Label>Fournisseur</Label>
+          <Select value={form.supplier_id} onValueChange={(v) => updateField("supplier_id", v === "none" ? "" : v)}>
+            <SelectTrigger><SelectValue placeholder="Selectionner un fournisseur" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Aucun</SelectItem>
+              {suppliers.map((s) => (
+                <SelectItem key={s.id} value={s.id.toString()}>
+                  {s.code} - {s.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <div className="grid grid-cols-3 gap-4">
           <div className="space-y-2">

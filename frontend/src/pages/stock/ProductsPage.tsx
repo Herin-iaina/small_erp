@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
-import { Plus, Pencil, Power } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Plus, Pencil, Power, Eye, SlidersHorizontal } from "lucide-react";
 import { useDataFetch } from "@/hooks/useDataFetch";
 import { DataTable, type Column } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { ProductFormDialog } from "@/components/stock/ProductFormDialog";
+import { MovementFormDialog } from "@/components/stock/MovementFormDialog";
 import { CategorySelect } from "@/components/stock/CategorySelect";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,6 +23,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { useCurrency } from "@/hooks/useCurrency";
 
 export default function ProductsPage() {
+  const navigate = useNavigate();
   const companyId = useAuthStore((s) => s.user?.company_id);
   const { formatCurrency } = useCurrency();
   const [formOpen, setFormOpen] = useState(false);
@@ -28,6 +31,8 @@ export default function ProductsPage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [togglingProduct, setTogglingProduct] = useState<Product | null>(null);
   const [stockTotals, setStockTotals] = useState<Record<string, number>>({});
+  const [adjustmentOpen, setAdjustmentOpen] = useState(false);
+  const [adjustingProductId, setAdjustingProductId] = useState<number | undefined>();
 
   const { data, total, page, pages, loading, params, setParams, setPage, refresh } =
     useDataFetch<Product, ProductListParams>({
@@ -98,6 +103,11 @@ export default function ProductsPage() {
     }
   };
 
+  const handleAdjust = (product: Product) => {
+    setAdjustingProductId(product.id);
+    setAdjustmentOpen(true);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -148,10 +158,18 @@ export default function ProductsPage() {
         }
         rowActions={(product) => (
           <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" onClick={() => handleEdit(product)}>
+            <Button variant="ghost" size="icon" onClick={() => navigate(`/stock/products/${product.id}`)} title="Voir le detail">
+              <Eye className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={() => handleEdit(product)} title="Modifier">
               <Pencil className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="icon" onClick={() => handleToggleConfirm(product)}>
+            {product.product_type === "stockable" && (
+              <Button variant="ghost" size="icon" onClick={() => handleAdjust(product)} title="Ajuster le stock">
+                <SlidersHorizontal className="h-4 w-4" />
+              </Button>
+            )}
+            <Button variant="ghost" size="icon" onClick={() => handleToggleConfirm(product)} title="Activer/Desactiver">
               <Power className="h-4 w-4" />
             </Button>
           </div>
@@ -159,6 +177,14 @@ export default function ProductsPage() {
       />
 
       <ProductFormDialog open={formOpen} onOpenChange={setFormOpen} product={editingProduct} onSuccess={refresh} />
+
+      <MovementFormDialog
+        open={adjustmentOpen}
+        onOpenChange={setAdjustmentOpen}
+        onSuccess={refresh}
+        defaultMovementType="adjustment"
+        defaultProductId={adjustingProductId}
+      />
 
       <ConfirmDialog
         open={confirmOpen}
