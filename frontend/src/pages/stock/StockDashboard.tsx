@@ -11,8 +11,8 @@ import {
 } from "@/components/ui/table";
 import { useAuthStore } from "@/stores/authStore";
 import { useCurrency } from "@/hooks/useCurrency";
-import { getStockKPIs, getStockAlerts } from "@/services/stock";
-import type { StockKPIs, StockAlert } from "@/types/stock";
+import { getStockKPIs, getStockAlerts, getStockValuation } from "@/services/stock";
+import type { StockKPIs, StockAlert, StockValuationItem } from "@/types/stock";
 import { Loader2 } from "lucide-react";
 
 export default function StockDashboard() {
@@ -20,15 +20,17 @@ export default function StockDashboard() {
   const { formatCurrency } = useCurrency();
   const [kpis, setKpis] = useState<StockKPIs | null>(null);
   const [alerts, setAlerts] = useState<StockAlert[]>([]);
+  const [valuation, setValuation] = useState<StockValuationItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!companyId) return;
     setLoading(true);
-    Promise.all([getStockKPIs(companyId), getStockAlerts(companyId)])
-      .then(([k, a]) => {
+    Promise.all([getStockKPIs(companyId), getStockAlerts(companyId), getStockValuation(companyId)])
+      .then(([k, a, v]) => {
         setKpis(k);
         setAlerts(a);
+        setValuation(v);
       })
       .finally(() => setLoading(false));
   }, [companyId]);
@@ -102,6 +104,41 @@ export default function StockDashboard() {
           )}
         </CardContent>
       </Card>
+
+      {valuation.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Valorisation du stock</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>SKU</TableHead>
+                  <TableHead>Article</TableHead>
+                  <TableHead className="text-right">Quantite</TableHead>
+                  <TableHead className="text-right">Cout unitaire</TableHead>
+                  <TableHead className="text-right">Valeur totale</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {valuation.map((v) => (
+                  <TableRow key={v.product_id}>
+                    <TableCell className="font-mono text-sm">{v.sku}</TableCell>
+                    <TableCell>{v.product_name}</TableCell>
+                    <TableCell className="text-right">{Number(v.quantity).toLocaleString("fr-FR", { maximumFractionDigits: 1 })}</TableCell>
+                    <TableCell className="text-right">{formatCurrency(v.unit_cost)}</TableCell>
+                    <TableCell className="text-right font-semibold">{formatCurrency(v.total_value)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            <div className="text-right pt-3 border-t mt-2 font-semibold">
+              Total: {formatCurrency(valuation.reduce((sum, v) => sum + Number(v.total_value), 0))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

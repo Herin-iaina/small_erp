@@ -26,7 +26,10 @@ async def create_product(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"Product SKU '{data.sku}' already exists for this company",
         )
-    product = Product(**data.model_dump())
+    create_data = data.model_dump()
+    if not create_data.get("category_id"):
+        create_data["category_id"] = None
+    product = Product(**create_data)
     db.add(product)
     await db.flush()
     await log_action(
@@ -102,6 +105,8 @@ async def update_product(
         k: getattr(product, k) for k in data.model_dump(exclude_unset=True)
     }
     update_data = data.model_dump(exclude_unset=True)
+    if "category_id" in update_data and not update_data["category_id"]:
+        update_data["category_id"] = None
     for field, value in update_data.items():
         setattr(product, field, value)
     await db.flush()

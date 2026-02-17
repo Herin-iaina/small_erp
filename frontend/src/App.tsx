@@ -21,6 +21,7 @@ import CategoriesPage from "@/pages/stock/CategoriesPage";
 import ReservationsPage from "@/pages/stock/ReservationsPage";
 import ReplenishmentPage from "@/pages/stock/ReplenishmentPage";
 import BarcodeScannerPage from "@/pages/stock/BarcodeScannerPage";
+import ProductDetailPage from "@/pages/stock/ProductDetailPage";
 import NotFoundPage from "@/pages/NotFound";
 
 export default function App() {
@@ -98,6 +99,14 @@ export default function App() {
             element={
               <ProtectedRoute permission="stock.view">
                 <ProductsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="stock/products/:id"
+            element={
+              <ProtectedRoute permission="stock.view">
+                <ProductDetailPage />
               </ProtectedRoute>
             }
           />

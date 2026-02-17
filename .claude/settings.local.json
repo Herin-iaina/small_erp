@@ -13,7 +13,8 @@
       "Bash(/Users/arthur_smartelia/ERP/backend/.venv/bin/pip show:*)",
       "Bash(npx shadcn@latest add:*)",
       "Bash(npx tsc:*)",
-      "Bash(npx vite build:*)"
+      "Bash(npx vite build:*)",
+      "Bash(npm run build:*)"
     ]
   }
 }

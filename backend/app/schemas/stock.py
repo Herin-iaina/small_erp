@@ -604,3 +604,181 @@ class StockValuationItem(BaseModel):
     quantity: Decimal
     unit_cost: Decimal
     total_value: Decimal
+
+
+# --- StockTransfer ---
+class StockTransferLineCreate(BaseModel):
+    product_id: int
+    lot_id: int | None = None
+    quantity_sent: Decimal
+
+
+class StockTransferBase(BaseModel):
+    source_warehouse_id: int
+    destination_warehouse_id: int
+    transfer_date: date
+    expected_arrival_date: date | None = None
+    notes: str | None = None
+
+
+class StockTransferCreate(StockTransferBase):
+    company_id: int
+    lines: list[StockTransferLineCreate] = []
+
+
+class StockTransferUpdate(BaseModel):
+    expected_arrival_date: date | None = None
+    transporter: str | None = None
+    tracking_number: str | None = None
+    notes: str | None = None
+
+
+class TransferShipBody(BaseModel):
+    transporter: str | None = None
+    tracking_number: str | None = None
+
+
+class TransferReceiveLine(BaseModel):
+    line_id: int
+    quantity_received: Decimal
+
+
+class TransferReceiveBody(BaseModel):
+    lines: list[TransferReceiveLine]
+
+
+class TransferWarehouseInfo(BaseModel):
+    id: int
+    code: str
+    name: str
+    model_config = {"from_attributes": True}
+
+
+class TransferUserInfo(BaseModel):
+    id: int
+    email: str
+    first_name: str
+    last_name: str
+    model_config = {"from_attributes": True}
+
+
+class TransferLineProductInfo(BaseModel):
+    id: int
+    sku: str
+    name: str
+    model_config = {"from_attributes": True}
+
+
+class TransferLineLotInfo(BaseModel):
+    id: int
+    lot_number: str
+    model_config = {"from_attributes": True}
+
+
+class StockTransferLineRead(BaseModel):
+    id: int
+    transfer_id: int
+    product_id: int
+    lot_id: int | None
+    quantity_sent: Decimal
+    quantity_received: Decimal | None
+    product: TransferLineProductInfo | None = None
+    lot: TransferLineLotInfo | None = None
+    model_config = {"from_attributes": True}
+
+
+class StockTransferListRead(BaseModel):
+    id: int
+    reference: str
+    source_warehouse_id: int
+    destination_warehouse_id: int
+    status: str
+    transfer_date: date
+    expected_arrival_date: date | None
+    actual_arrival_date: date | None
+    transporter: str | None
+    tracking_number: str | None
+    notes: str | None
+    created_by_id: int | None
+    company_id: int
+    source_warehouse: TransferWarehouseInfo | None = None
+    destination_warehouse: TransferWarehouseInfo | None = None
+    created_by: TransferUserInfo | None = None
+    created_at: datetime
+    updated_at: datetime
+    model_config = {"from_attributes": True}
+
+
+class StockTransferRead(StockTransferListRead):
+    lines: list[StockTransferLineRead] = []
+
+
+# --- InventoryCycle ---
+class InventoryCycleBase(BaseModel):
+    name: str
+    frequency: str
+    classification: str | None = None
+    category_id: int | None = None
+    warehouse_id: int
+    start_date: date
+    end_date: date
+    assigned_to_id: int | None = None
+
+
+class InventoryCycleCreate(InventoryCycleBase):
+    company_id: int
+
+
+class InventoryCycleGenerateBody(BaseModel):
+    company_id: int
+    warehouse_id: int
+    period_start: date
+    period_end: date
+    assigned_to_id: int | None = None
+
+
+class CycleWarehouseInfo(BaseModel):
+    id: int
+    code: str
+    name: str
+    model_config = {"from_attributes": True}
+
+
+class CycleCategoryInfo(BaseModel):
+    id: int
+    code: str
+    name: str
+    model_config = {"from_attributes": True}
+
+
+class CycleUserInfo(BaseModel):
+    id: int
+    email: str
+    first_name: str
+    last_name: str
+    model_config = {"from_attributes": True}
+
+
+class InventoryCycleListRead(BaseModel):
+    id: int
+    name: str
+    frequency: str
+    classification: str | None
+    category_id: int | None
+    warehouse_id: int
+    start_date: date
+    end_date: date
+    assigned_to_id: int | None
+    inventory_id: int | None
+    status: str
+    company_id: int
+    warehouse: CycleWarehouseInfo | None = None
+    category: CycleCategoryInfo | None = None
+    assigned_to: CycleUserInfo | None = None
+    created_at: datetime
+    updated_at: datetime
+    model_config = {"from_attributes": True}
+
+
+class InventoryCycleRead(InventoryCycleListRead):
+    inventory: InventoryListRead | None = None

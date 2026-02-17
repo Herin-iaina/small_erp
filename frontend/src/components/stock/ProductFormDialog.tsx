@@ -12,9 +12,11 @@ import {
 } from "@/components/ui/select";
 import { CategorySelect } from "./CategorySelect";
 import { toast } from "@/hooks/use-toast";
-import { createProduct, updateProduct } from "@/services/stock";
+import { createProduct, updateProduct, listUomValues } from "@/services/stock";
 import type { Product } from "@/types/stock";
 import { useAuthStore } from "@/stores/authStore";
+
+const DEFAULT_UOMS = ["pce", "kg", "l", "m", "m2", "m3"];
 
 interface Props {
   open: boolean;
@@ -68,7 +70,19 @@ const defaultForm: Form = {
 export function ProductFormDialog({ open, onOpenChange, product, onSuccess }: Props) {
   const [form, setForm] = useState<Form>(defaultForm);
   const [loading, setLoading] = useState(false);
+  const [uomOptions, setUomOptions] = useState<string[]>(DEFAULT_UOMS);
   const companyId = useAuthStore((s) => s.user?.company_id);
+
+  useEffect(() => {
+    if (open && companyId) {
+      listUomValues(companyId)
+        .then((values) => {
+          const merged = Array.from(new Set([...DEFAULT_UOMS, ...values])).sort();
+          setUomOptions(merged);
+        })
+        .catch(() => {});
+    }
+  }, [open, companyId]);
 
   useEffect(() => {
     if (open) {
@@ -108,6 +122,7 @@ export function ProductFormDialog({ open, onOpenChange, product, onSuccess }: Pr
     try {
       const payload = {
         ...form,
+        category_id: form.category_id || null,
         weight: form.weight ? Number(form.weight) : null,
         barcode: form.barcode || null,
         description: form.description || null,
@@ -170,17 +185,17 @@ export function ProductFormDialog({ open, onOpenChange, product, onSuccess }: Pr
             </div>
             <div className="space-y-2">
               <Label>Unite de mesure</Label>
-              <Select value={form.unit_of_measure} onValueChange={(v) => updateField("unit_of_measure", v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pce">Piece</SelectItem>
-                  <SelectItem value="kg">Kilogramme</SelectItem>
-                  <SelectItem value="l">Litre</SelectItem>
-                  <SelectItem value="m">Metre</SelectItem>
-                  <SelectItem value="m2">m2</SelectItem>
-                  <SelectItem value="m3">m3</SelectItem>
-                </SelectContent>
-              </Select>
+              <Input
+                list="uom-options"
+                value={form.unit_of_measure}
+                onChange={(e) => updateField("unit_of_measure", e.target.value)}
+                placeholder="pce, kg, l, m..."
+              />
+              <datalist id="uom-options">
+                {uomOptions.map((u) => (
+                  <option key={u} value={u} />
+                ))}
+              </datalist>
             </div>
             <div className="space-y-2">
               <Label>Poids (kg)</Label>

@@ -372,3 +372,99 @@ class InventoryLine(Base):
         if self.counted_quantity is None:
             return None
         return self.counted_quantity - self.expected_quantity
+
+
+class StockTransfer(Base):
+    __tablename__ = "stock_transfers"
+
+    reference: Mapped[str] = mapped_column(
+        String(50), unique=True, nullable=False, index=True
+    )
+    source_warehouse_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("warehouses.id", ondelete="CASCADE"), nullable=False
+    )
+    destination_warehouse_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("warehouses.id", ondelete="CASCADE"), nullable=False
+    )
+    status: Mapped[str] = mapped_column(String(20), default="draft")
+    transfer_date: Mapped[date] = mapped_column(Date, nullable=False)
+    expected_arrival_date: Mapped[date | None] = mapped_column(Date)
+    actual_arrival_date: Mapped[date | None] = mapped_column(Date)
+    transporter: Mapped[str | None] = mapped_column(String(255))
+    tracking_number: Mapped[str | None] = mapped_column(String(255))
+    notes: Mapped[str | None] = mapped_column(Text)
+    created_by_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="SET NULL")
+    )
+    company_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False
+    )
+
+    # Relationships
+    source_warehouse: Mapped["Warehouse"] = relationship(
+        "Warehouse", foreign_keys=[source_warehouse_id]
+    )
+    destination_warehouse: Mapped["Warehouse"] = relationship(
+        "Warehouse", foreign_keys=[destination_warehouse_id]
+    )
+    lines: Mapped[list["StockTransferLine"]] = relationship(
+        "StockTransferLine", back_populates="transfer", cascade="all, delete-orphan"
+    )
+    created_by: Mapped["User | None"] = relationship("User")  # noqa: F821
+    company: Mapped["Company"] = relationship("Company")  # noqa: F821
+
+
+class StockTransferLine(Base):
+    __tablename__ = "stock_transfer_lines"
+
+    transfer_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("stock_transfers.id", ondelete="CASCADE"), nullable=False
+    )
+    product_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("products.id", ondelete="CASCADE"), nullable=False
+    )
+    lot_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("lots.id", ondelete="SET NULL")
+    )
+    quantity_sent: Mapped[Decimal] = mapped_column(Numeric(12, 3), nullable=False)
+    quantity_received: Mapped[Decimal | None] = mapped_column(Numeric(12, 3))
+
+    # Relationships
+    transfer: Mapped["StockTransfer"] = relationship(
+        "StockTransfer", back_populates="lines"
+    )
+    product: Mapped["Product"] = relationship("Product")
+    lot: Mapped["Lot | None"] = relationship("Lot")
+
+
+class InventoryCycle(Base):
+    __tablename__ = "inventory_cycles"
+
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    frequency: Mapped[str] = mapped_column(String(20), nullable=False)
+    classification: Mapped[str | None] = mapped_column(String(5))
+    category_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("product_categories.id", ondelete="SET NULL")
+    )
+    warehouse_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("warehouses.id", ondelete="CASCADE"), nullable=False
+    )
+    start_date: Mapped[date] = mapped_column(Date, nullable=False)
+    end_date: Mapped[date] = mapped_column(Date, nullable=False)
+    assigned_to_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="SET NULL")
+    )
+    inventory_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("inventories.id", ondelete="SET NULL")
+    )
+    status: Mapped[str] = mapped_column(String(20), default="planned")
+    company_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False
+    )
+
+    # Relationships
+    category: Mapped["ProductCategory | None"] = relationship("ProductCategory")
+    warehouse: Mapped["Warehouse"] = relationship("Warehouse")
+    assigned_to: Mapped["User | None"] = relationship("User")  # noqa: F821
+    inventory: Mapped["Inventory | None"] = relationship("Inventory")
+    company: Mapped["Company"] = relationship("Company")  # noqa: F821
