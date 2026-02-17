@@ -19,7 +19,9 @@ import {
   FolderTree,
   Lock,
   RefreshCw,
+  RotateCw,
   ScanBarcode,
+  Truck,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -47,7 +49,9 @@ const ICON_MAP: Record<string, LucideIcon> = {
   FolderTree,
   Lock,
   RefreshCw,
+  RotateCw,
   ScanBarcode,
+  Truck,
 };
 
 export function Sidebar() {

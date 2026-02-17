@@ -274,6 +274,62 @@ export interface ReplenishmentSuggestion {
   abc_classification: string | null;
 }
 
+// --- StockTransfer ---
+export interface StockTransferLine {
+  id: number;
+  transfer_id: number;
+  product_id: number;
+  lot_id: number | null;
+  quantity_sent: number;
+  quantity_received: number | null;
+  product: { id: number; sku: string; name: string } | null;
+  lot: { id: number; lot_number: string } | null;
+}
+
+export interface StockTransfer {
+  id: number;
+  reference: string;
+  source_warehouse_id: number;
+  destination_warehouse_id: number;
+  status: string;
+  transfer_date: string;
+  expected_arrival_date: string | null;
+  actual_arrival_date: string | null;
+  transporter: string | null;
+  tracking_number: string | null;
+  notes: string | null;
+  created_by_id: number | null;
+  company_id: number;
+  source_warehouse: { id: number; code: string; name: string } | null;
+  destination_warehouse: { id: number; code: string; name: string } | null;
+  created_by: { id: number; email: string; first_name: string; last_name: string } | null;
+  lines: StockTransferLine[];
+  created_at: string;
+  updated_at: string;
+}
+
+// --- InventoryCycle ---
+export interface InventoryCycle {
+  id: number;
+  name: string;
+  frequency: string;
+  classification: string | null;
+  category_id: number | null;
+  warehouse_id: number;
+  start_date: string;
+  end_date: string;
+  assigned_to_id: number | null;
+  inventory_id: number | null;
+  status: string;
+  company_id: number;
+  warehouse: { id: number; code: string; name: string } | null;
+  category: { id: number; code: string; name: string } | null;
+  assigned_to: { id: number; email: string; first_name: string; last_name: string } | null;
+  inventory: Inventory | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // --- Consumption Stats ---
 export interface ConsumptionStats {
   product_id: number;

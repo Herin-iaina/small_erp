@@ -12,6 +12,8 @@ import type {
   StockMovement,
   StockReservation,
   Inventory,
+  StockTransfer,
+  InventoryCycle,
   StockKPIs,
   StockAlert,
   StockValuationItem,
@@ -412,6 +414,130 @@ export async function calculateReorderPoints(companyId: number): Promise<{ updat
 
 export async function calculateAbcClassification(companyId: number): Promise<{ classifications: Record<string, number> }> {
   const { data } = await api.post("/stock/calculate-abc-classification", null, { params: { company_id: companyId } });
+  return data;
+}
+
+// --- Stock Transfers ---
+
+export interface TransferListParams {
+  [key: string]: unknown;
+  company_id: number;
+  status?: string;
+  warehouse_id?: number;
+  search?: string;
+  page?: number;
+  page_size?: number;
+}
+
+export async function listTransfers(params: TransferListParams): Promise<PaginatedResponse<StockTransfer>> {
+  const { data } = await api.get("/stock-transfers", { params });
+  return data;
+}
+
+export async function getTransfer(id: number): Promise<StockTransfer> {
+  const { data } = await api.get(`/stock-transfers/${id}`);
+  return data;
+}
+
+export async function createTransfer(body: {
+  source_warehouse_id: number;
+  destination_warehouse_id: number;
+  transfer_date: string;
+  expected_arrival_date?: string | null;
+  notes?: string | null;
+  company_id: number;
+  lines: { product_id: number; lot_id?: number | null; quantity_sent: number }[];
+}): Promise<StockTransfer> {
+  const { data } = await api.post("/stock-transfers", body);
+  return data;
+}
+
+export async function updateTransfer(id: number, body: {
+  expected_arrival_date?: string | null;
+  transporter?: string | null;
+  tracking_number?: string | null;
+  notes?: string | null;
+}): Promise<StockTransfer> {
+  const { data } = await api.patch(`/stock-transfers/${id}`, body);
+  return data;
+}
+
+export async function validateTransfer(id: number): Promise<StockTransfer> {
+  const { data } = await api.post(`/stock-transfers/${id}/validate`);
+  return data;
+}
+
+export async function shipTransfer(id: number, body: { transporter?: string; tracking_number?: string }): Promise<StockTransfer> {
+  const { data } = await api.post(`/stock-transfers/${id}/ship`, body);
+  return data;
+}
+
+export async function receiveTransfer(id: number, body: { lines: { line_id: number; quantity_received: number }[] }): Promise<StockTransfer> {
+  const { data } = await api.post(`/stock-transfers/${id}/receive`, body);
+  return data;
+}
+
+export async function cancelTransfer(id: number): Promise<StockTransfer> {
+  const { data } = await api.post(`/stock-transfers/${id}/cancel`);
+  return data;
+}
+
+// --- Inventory Cycles ---
+
+export interface CycleListParams {
+  [key: string]: unknown;
+  company_id: number;
+  status?: string;
+  warehouse_id?: number;
+  frequency?: string;
+  classification?: string;
+  page?: number;
+  page_size?: number;
+}
+
+export async function listCycles(params: CycleListParams): Promise<PaginatedResponse<InventoryCycle>> {
+  const { data } = await api.get("/inventory-cycles", { params });
+  return data;
+}
+
+export async function getCycle(id: number): Promise<InventoryCycle> {
+  const { data } = await api.get(`/inventory-cycles/${id}`);
+  return data;
+}
+
+export async function createCycle(body: {
+  name: string;
+  frequency: string;
+  classification?: string | null;
+  category_id?: number | null;
+  warehouse_id: number;
+  start_date: string;
+  end_date: string;
+  assigned_to_id?: number | null;
+  company_id: number;
+}): Promise<InventoryCycle> {
+  const { data } = await api.post("/inventory-cycles", body);
+  return data;
+}
+
+export async function generateCycles(body: {
+  company_id: number;
+  warehouse_id: number;
+  period_start: string;
+  period_end: string;
+  assigned_to_id?: number | null;
+}): Promise<InventoryCycle[]> {
+  const { data } = await api.post("/inventory-cycles/generate", body);
+  return data;
+}
+
+export async function startCycle(id: number): Promise<InventoryCycle> {
+  const { data } = await api.post(`/inventory-cycles/${id}/start`);
+  return data;
+}
+
+export async function completeCycle(id: number): Promise<InventoryCycle> {
+  const { data } = await api.post(`/inventory-cycles/${id}/complete`);
   return data;
 }
 

@@ -22,6 +22,9 @@ import ReservationsPage from "@/pages/stock/ReservationsPage";
 import ReplenishmentPage from "@/pages/stock/ReplenishmentPage";
 import BarcodeScannerPage from "@/pages/stock/BarcodeScannerPage";
 import ProductDetailPage from "@/pages/stock/ProductDetailPage";
+import TransfersPage from "@/pages/stock/TransfersPage";
+import TransferDetailPage from "@/pages/stock/TransferDetailPage";
+import CyclesPage from "@/pages/stock/CyclesPage";
 import NotFoundPage from "@/pages/NotFound";
 
 export default function App() {
@@ -171,6 +174,30 @@ export default function App() {
             element={
               <ProtectedRoute permission="stock.view">
                 <BarcodeScannerPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="stock/transfers"
+            element={
+              <ProtectedRoute permission="stock.view">
+                <TransfersPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="stock/transfers/:id"
+            element={
+              <ProtectedRoute permission="stock.view">
+                <TransferDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="stock/cycles"
+            element={
+              <ProtectedRoute permission="stock.view">
+                <CyclesPage />
               </ProtectedRoute>
             }
           />
