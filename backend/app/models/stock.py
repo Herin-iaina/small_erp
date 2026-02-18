@@ -47,6 +47,31 @@ class ProductCategory(Base):
     company: Mapped["Company"] = relationship("Company")  # noqa: F821
 
 
+class UnitOfMeasure(Base):
+    __tablename__ = "units_of_measure"
+    __table_args__ = (
+        UniqueConstraint("symbol", "company_id", name="uq_uom_symbol_company"),
+    )
+
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    symbol: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
+    category: Mapped[str] = mapped_column(String(20), nullable=False)
+    base_unit_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("units_of_measure.id", ondelete="SET NULL")
+    )
+    conversion_factor: Mapped[Decimal] = mapped_column(Numeric(15, 6), default=1)
+    company_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False
+    )
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    # Relationships
+    base_unit: Mapped["UnitOfMeasure | None"] = relationship(
+        "UnitOfMeasure", remote_side="UnitOfMeasure.id"
+    )
+    company: Mapped["Company"] = relationship("Company")  # noqa: F821
+
+
 class Product(Base):
     __tablename__ = "products"
     __table_args__ = (
@@ -62,6 +87,12 @@ class Product(Base):
     )
     product_type: Mapped[str] = mapped_column(String(20), default="stockable")
     unit_of_measure: Mapped[str] = mapped_column(String(20), default="pce")
+    unit_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("units_of_measure.id", ondelete="SET NULL")
+    )
+    purchase_unit_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("units_of_measure.id", ondelete="SET NULL")
+    )
     sale_price: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=0)
     cost_price: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=0)
     tax_rate: Mapped[Decimal] = mapped_column(Numeric(5, 2), default=20.00)
@@ -85,6 +116,12 @@ class Product(Base):
     # Relationships
     category: Mapped["ProductCategory | None"] = relationship(
         "ProductCategory", back_populates="products"
+    )
+    unit: Mapped["UnitOfMeasure | None"] = relationship(
+        "UnitOfMeasure", foreign_keys=[unit_id]
+    )
+    purchase_unit: Mapped["UnitOfMeasure | None"] = relationship(
+        "UnitOfMeasure", foreign_keys=[purchase_unit_id]
     )
     lots: Mapped[list["Lot"]] = relationship("Lot", back_populates="product")
     stock_levels: Mapped[list["StockLevel"]] = relationship(

@@ -38,6 +38,45 @@ class ProductCategoryTree(ProductCategoryRead):
     children: list["ProductCategoryTree"] = []
 
 
+# --- UnitOfMeasure ---
+class UnitOfMeasureBase(BaseModel):
+    name: str
+    symbol: str
+    category: str
+    base_unit_id: int | None = None
+    conversion_factor: Decimal = Decimal(1)
+
+
+class UnitOfMeasureCreate(UnitOfMeasureBase):
+    company_id: int
+
+
+class UnitOfMeasureUpdate(BaseModel):
+    name: str | None = None
+    symbol: str | None = None
+    category: str | None = None
+    base_unit_id: int | None = None
+    conversion_factor: Decimal | None = None
+    is_active: bool | None = None
+
+
+class UnitOfMeasureBaseInfo(BaseModel):
+    id: int
+    symbol: str
+    name: str
+    model_config = {"from_attributes": True}
+
+
+class UnitOfMeasureRead(UnitOfMeasureBase):
+    id: int
+    company_id: int
+    is_active: bool
+    base_unit: UnitOfMeasureBaseInfo | None = None
+    created_at: datetime
+    updated_at: datetime
+    model_config = {"from_attributes": True}
+
+
 # --- Product ---
 class ProductBase(BaseModel):
     sku: str
@@ -47,6 +86,8 @@ class ProductBase(BaseModel):
     category_id: int | None = None
     product_type: str = "stockable"
     unit_of_measure: str = "pce"
+    unit_id: int | None = None
+    purchase_unit_id: int | None = None
     sale_price: Decimal = Decimal(0)
     cost_price: Decimal = Decimal(0)
     tax_rate: Decimal = Decimal("20.00")
@@ -74,6 +115,8 @@ class ProductUpdate(BaseModel):
     category_id: int | None = None
     product_type: str | None = None
     unit_of_measure: str | None = None
+    unit_id: int | None = None
+    purchase_unit_id: int | None = None
     sale_price: Decimal | None = None
     cost_price: Decimal | None = None
     tax_rate: Decimal | None = None
@@ -96,6 +139,8 @@ class ProductRead(ProductBase):
     average_daily_consumption: Decimal = Decimal(0)
     abc_classification: str | None = None
     category: ProductCategoryRead | None = None
+    unit: UnitOfMeasureBaseInfo | None = None
+    purchase_unit: UnitOfMeasureBaseInfo | None = None
     created_at: datetime
     updated_at: datetime
 

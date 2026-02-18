@@ -20,6 +20,7 @@ import {
   Lock,
   RefreshCw,
   RotateCw,
+  Ruler,
   ScanBarcode,
   Truck,
   type LucideIcon,
@@ -50,6 +51,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Lock,
   RefreshCw,
   RotateCw,
+  Ruler,
   ScanBarcode,
   Truck,
 };

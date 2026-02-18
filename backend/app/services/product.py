@@ -48,7 +48,11 @@ async def create_product(
 async def get_product(db: AsyncSession, product_id: int) -> Product:
     result = await db.execute(
         select(Product)
-        .options(selectinload(Product.category))
+        .options(
+            selectinload(Product.category),
+            selectinload(Product.unit),
+            selectinload(Product.purchase_unit),
+        )
         .where(Product.id == product_id)
     )
     product = result.scalar_one_or_none()
@@ -73,7 +77,11 @@ async def list_products(
 ) -> dict:
     query = (
         select(Product)
-        .options(selectinload(Product.category))
+        .options(
+            selectinload(Product.category),
+            selectinload(Product.unit),
+            selectinload(Product.purchase_unit),
+        )
         .where(Product.company_id == company_id)
         .order_by(Product.name)
     )

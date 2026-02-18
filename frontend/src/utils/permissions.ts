@@ -31,6 +31,7 @@ export const NAV_ITEMS: NavItem[] = [
   { label: "Reappro.", path: "/stock/replenishment", icon: "RefreshCw", permission: "stock.view", group: "Stock" },
   { label: "Transferts", path: "/stock/transfers", icon: "Truck", permission: "stock.view", group: "Stock" },
   { label: "Cycles inventaire", path: "/stock/cycles", icon: "RotateCw", permission: "stock.view", group: "Stock" },
+  { label: "Unites", path: "/stock/units", icon: "Ruler", permission: "stock.view", group: "Stock" },
   { label: "Scanner", path: "/stock/barcode-scanner", icon: "ScanBarcode", permission: "stock.view", group: "Stock" },
   // Future modules:
   { label: "Point de vente", path: "/pos", icon: "ShoppingCart", permission: "pos.view" },

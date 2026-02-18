@@ -12,6 +12,21 @@ export interface ProductCategory {
   children?: ProductCategory[];
 }
 
+// --- UnitOfMeasure ---
+export interface UnitOfMeasure {
+  id: number;
+  name: string;
+  symbol: string;
+  category: string;
+  base_unit_id: number | null;
+  conversion_factor: number;
+  company_id: number;
+  is_active: boolean;
+  base_unit: { id: number; symbol: string; name: string } | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // --- Product ---
 export interface Product {
   id: number;
@@ -22,6 +37,8 @@ export interface Product {
   category_id: number | null;
   product_type: string;
   unit_of_measure: string;
+  unit_id: number | null;
+  purchase_unit_id: number | null;
   sale_price: number;
   cost_price: number;
   tax_rate: number;
@@ -40,6 +57,8 @@ export interface Product {
   company_id: number;
   is_active: boolean;
   category: ProductCategory | null;
+  unit: { id: number; symbol: string; name: string } | null;
+  purchase_unit: { id: number; symbol: string; name: string } | null;
   created_at: string;
   updated_at: string;
 }

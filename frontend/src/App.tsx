@@ -25,6 +25,7 @@ import ProductDetailPage from "@/pages/stock/ProductDetailPage";
 import TransfersPage from "@/pages/stock/TransfersPage";
 import TransferDetailPage from "@/pages/stock/TransferDetailPage";
 import CyclesPage from "@/pages/stock/CyclesPage";
+import UnitsPage from "@/pages/stock/UnitsPage";
 import NotFoundPage from "@/pages/NotFound";
 
 export default function App() {
@@ -198,6 +199,14 @@ export default function App() {
             element={
               <ProtectedRoute permission="stock.view">
                 <CyclesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="stock/units"
+            element={
+              <ProtectedRoute permission="stock.view">
+                <UnitsPage />
               </ProtectedRoute>
             }
           />

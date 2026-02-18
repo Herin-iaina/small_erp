@@ -12,6 +12,7 @@ import type {
   StockMovement,
   StockReservation,
   Inventory,
+  UnitOfMeasure,
   StockTransfer,
   InventoryCycle,
   StockKPIs,
@@ -20,6 +21,62 @@ import type {
   ReplenishmentSuggestion,
   ConsumptionStats,
 } from "@/types/stock";
+
+// --- Units of Measure ---
+
+export interface UnitListParams {
+  [key: string]: unknown;
+  company_id: number;
+  category?: string;
+  search?: string;
+  is_active?: boolean;
+  page?: number;
+  page_size?: number;
+}
+
+export async function listUnits(params: UnitListParams): Promise<PaginatedResponse<UnitOfMeasure>> {
+  const { data } = await api.get("/units", { params });
+  return data;
+}
+
+export async function getUnit(id: number): Promise<UnitOfMeasure> {
+  const { data } = await api.get(`/units/${id}`);
+  return data;
+}
+
+export async function createUnit(body: {
+  name: string;
+  symbol: string;
+  category: string;
+  base_unit_id?: number | null;
+  conversion_factor?: number;
+  company_id: number;
+}): Promise<UnitOfMeasure> {
+  const { data } = await api.post("/units", body);
+  return data;
+}
+
+export async function updateUnit(id: number, body: {
+  name?: string;
+  symbol?: string;
+  category?: string;
+  base_unit_id?: number | null;
+  conversion_factor?: number;
+  is_active?: boolean;
+}): Promise<UnitOfMeasure> {
+  const { data } = await api.patch(`/units/${id}`, body);
+  return data;
+}
+
+export async function getUnitConversions(id: number): Promise<{ unit_id: number; symbol: string; name: string; conversion_factor: number }[]> {
+  const { data } = await api.get(`/units/${id}/conversions`);
+  return data;
+}
+
+export async function seedUnits(companyId: number): Promise<UnitOfMeasure[]> {
+  const { data } = await api.post("/units/seed", null, { params: { company_id: companyId } });
+  return data;
+}
 
 // --- Categories ---
 

@@ -12,11 +12,9 @@ import {
 } from "@/components/ui/select";
 import { CategorySelect } from "./CategorySelect";
 import { toast } from "@/hooks/use-toast";
-import { createProduct, updateProduct, listUomValues } from "@/services/stock";
-import type { Product } from "@/types/stock";
+import { createProduct, updateProduct, listUnits, type UnitListParams } from "@/services/stock";
+import type { Product, UnitOfMeasure } from "@/types/stock";
 import { useAuthStore } from "@/stores/authStore";
-
-const DEFAULT_UOMS = ["pce", "kg", "l", "m", "m2", "m3"];
 
 interface Props {
   open: boolean;
@@ -33,6 +31,8 @@ interface Form {
   category_id: number | null;
   product_type: string;
   unit_of_measure: string;
+  unit_id: string;
+  purchase_unit_id: string;
   sale_price: number;
   cost_price: number;
   tax_rate: number;
@@ -54,6 +54,8 @@ const defaultForm: Form = {
   category_id: null,
   product_type: "stockable",
   unit_of_measure: "pce",
+  unit_id: "",
+  purchase_unit_id: "",
   sale_price: 0,
   cost_price: 0,
   tax_rate: 20,
@@ -70,16 +72,13 @@ const defaultForm: Form = {
 export function ProductFormDialog({ open, onOpenChange, product, onSuccess }: Props) {
   const [form, setForm] = useState<Form>(defaultForm);
   const [loading, setLoading] = useState(false);
-  const [uomOptions, setUomOptions] = useState<string[]>(DEFAULT_UOMS);
+  const [units, setUnits] = useState<UnitOfMeasure[]>([]);
   const companyId = useAuthStore((s) => s.user?.company_id);
 
   useEffect(() => {
     if (open && companyId) {
-      listUomValues(companyId)
-        .then((values) => {
-          const merged = Array.from(new Set([...DEFAULT_UOMS, ...values])).sort();
-          setUomOptions(merged);
-        })
+      listUnits({ company_id: companyId, is_active: true, page_size: 200 } as UnitListParams)
+        .then((r) => setUnits(r.items))
         .catch(() => {});
     }
   }, [open, companyId]);
@@ -96,6 +95,8 @@ export function ProductFormDialog({ open, onOpenChange, product, onSuccess }: Pr
               category_id: product.category_id,
               product_type: product.product_type,
               unit_of_measure: product.unit_of_measure,
+              unit_id: product.unit_id?.toString() ?? "",
+              purchase_unit_id: product.purchase_unit_id?.toString() ?? "",
               sale_price: product.sale_price,
               cost_price: product.cost_price,
               tax_rate: product.tax_rate,
@@ -123,6 +124,8 @@ export function ProductFormDialog({ open, onOpenChange, product, onSuccess }: Pr
       const payload = {
         ...form,
         category_id: form.category_id || null,
+        unit_id: form.unit_id ? Number(form.unit_id) : null,
+        purchase_unit_id: form.purchase_unit_id ? Number(form.purchase_unit_id) : null,
         weight: form.weight ? Number(form.weight) : null,
         barcode: form.barcode || null,
         description: form.description || null,
@@ -185,17 +188,27 @@ export function ProductFormDialog({ open, onOpenChange, product, onSuccess }: Pr
             </div>
             <div className="space-y-2">
               <Label>Unite de mesure</Label>
-              <Input
-                list="uom-options"
-                value={form.unit_of_measure}
-                onChange={(e) => updateField("unit_of_measure", e.target.value)}
-                placeholder="pce, kg, l, m..."
-              />
-              <datalist id="uom-options">
-                {uomOptions.map((u) => (
-                  <option key={u} value={u} />
-                ))}
-              </datalist>
+              <Select value={form.unit_id || "none"} onValueChange={(v) => updateField("unit_id", v === "none" ? "" : v)}>
+                <SelectTrigger><SelectValue placeholder="Selectionner une unite" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">-- Aucune --</SelectItem>
+                  {units.map((u) => (
+                    <SelectItem key={u.id} value={u.id.toString()}>{u.symbol} - {u.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Unite d'achat</Label>
+              <Select value={form.purchase_unit_id || "none"} onValueChange={(v) => updateField("purchase_unit_id", v === "none" ? "" : v)}>
+                <SelectTrigger><SelectValue placeholder="Selectionner une unite" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">-- Meme que l'unite de mesure --</SelectItem>
+                  {units.map((u) => (
+                    <SelectItem key={u.id} value={u.id.toString()}>{u.symbol} - {u.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label>Poids (kg)</Label>

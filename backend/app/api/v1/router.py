@@ -16,6 +16,7 @@ from app.api.v1.stock_movements import router as stock_movements_router
 from app.api.v1.stock_transfers import router as stock_transfers_router
 from app.api.v1.third_parties import router as third_parties_router
 from app.api.v1.traceability import router as traceability_router
+from app.api.v1.uom import router as uom_router
 from app.api.v1.users import router as users_router
 from app.api.v1.warehouses import router as warehouses_router
 
@@ -39,3 +40,4 @@ api_router.include_router(replenishment_router)
 api_router.include_router(traceability_router)
 api_router.include_router(stock_transfers_router)
 api_router.include_router(inventory_cycles_router)
+api_router.include_router(uom_router)

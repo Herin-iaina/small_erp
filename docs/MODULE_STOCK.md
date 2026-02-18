@@ -22,10 +22,10 @@
    - 3.8 [Inventory / InventoryLine](#38-inventory--inventoryline)
    - 3.9 [StockReservation](#39-stockreservation)
    - 3.10 [ProductBarcode](#310-productbarcode)
-   - 3.11 [UnitOfMeasure (à implémenter)](#311-unitofmeasure--à-implémenter)
+   - 3.11 [UnitOfMeasure](#311-unitofmeasure)
    - 3.12 [ProductVariant (à implémenter)](#312-productvariant--à-implémenter)
-   - 3.13 [StockTransfer (à implémenter)](#313-stocktransfer--à-implémenter)
-   - 3.14 [InventoryCycle (à implémenter)](#314-inventorycycle--à-implémenter)
+   - 3.13 [StockTransfer](#313-stocktransfer)
+   - 3.14 [InventoryCycle](#314-inventorycycle)
 4. [Permissions RBAC](#4--permissions-rbac)
 5. [Endpoints API](#5--endpoints-api)
    - 5.1 [Produits](#51-produits)
@@ -37,6 +37,9 @@
    - 5.7 [Réservations](#57-réservations)
    - 5.8 [Tableau de bord & KPIs](#58-tableau-de-bord--kpis)
    - 5.9 [Réapprovisionnement](#59-réapprovisionnement)
+   - 5.10 [Unités de mesure](#510-unités-de-mesure)
+   - 5.11 [Transferts inter-entrepôts](#511-transferts-inter-entrepôts)
+   - 5.12 [Cycles d'inventaire](#512-cycles-dinventaire)
 6. [Exemples de payloads JSON](#6--exemples-de-payloads-json)
 7. [Workflows & Diagrammes](#7--workflows--diagrammes)
    - 7.1 [Mouvement de stock](#71-workflow-mouvement-de-stock)
@@ -75,7 +78,7 @@ Le module Stock gère l'ensemble du cycle de vie des articles et de leur inventa
 
 | Couche | Chemin | Description |
 |--------|--------|-------------|
-| Modèles | `backend/app/models/stock.py` | 10 modèles SQLAlchemy |
+| Modèles | `backend/app/models/stock.py` | 13 modèles SQLAlchemy |
 | Schémas | `backend/app/schemas/stock.py` | Pydantic v2 (validation API) |
 | Services | `backend/app/services/product.py` | Logique produit |
 | | `backend/app/services/stock_movement.py` | Logique mouvements |
@@ -87,6 +90,9 @@ Le module Stock gère l'ensemble du cycle de vie des articles et de leur inventa
 | | `backend/app/services/warehouse.py` | Entrepôts & emplacements |
 | | `backend/app/services/lot.py` | Lots |
 | | `backend/app/services/category.py` | Catégories |
+| | `backend/app/services/uom.py` | Unités de mesure |
+| | `backend/app/services/stock_transfer.py` | Transferts inter-entrepôts |
+| | `backend/app/services/inventory_cycle.py` | Cycles d'inventaire |
 | Routes | `backend/app/routers/stock.py` | Endpoints API REST |
 | Frontend | `frontend/src/pages/stock/` | Pages React |
 | | `frontend/src/services/stock.ts` | Appels API |
@@ -163,7 +169,9 @@ Chaque modèle hérite de `Base` et inclut automatiquement :
 | `description` | Text | nullable | Description longue |
 | `category_id` | Integer | FK → product_categories.id, SET NULL | Catégorie |
 | `product_type` | String | default `"stockable"` | `stockable`, `service`, `consumable` |
-| `unit_of_measure` | String | default `"pce"` | Unité de mesure |
+| `unit_of_measure` | String | default `"pce"` | Unité de mesure (legacy) |
+| `unit_id` | Integer | FK → units_of_measure.id, SET NULL | Unité de vente |
+| `purchase_unit_id` | Integer | FK → units_of_measure.id, SET NULL | Unité d'achat |
 | `sale_price` | Numeric(12,2) | default 0 | Prix de vente HT |
 | `cost_price` | Numeric(12,2) | default 0 | Prix de revient (CUMP) |
 | `tax_rate` | Numeric(5,2) | default 20.00 | Taux de TVA |
@@ -184,7 +192,7 @@ Chaque modèle hérite de `Base` et inclut automatiquement :
 | `created_at` | DateTime(tz) | auto | — |
 | `updated_at` | DateTime(tz) | auto | — |
 
-**Relations** : `category`, `lots`, `stock_levels`, `company`
+**Relations** : `category`, `unit`, `purchase_unit`, `lots`, `stock_levels`, `company`
 
 ---
 
@@ -412,18 +420,18 @@ difference = counted_quantity - expected_quantity  # si counted_quantity renseig
 
 ---
 
-### 3.11 UnitOfMeasure — 🔮 À implémenter
+### 3.11 UnitOfMeasure ✅
 
 **Table** : `units_of_measure`
 
 | Champ | Type | Contraintes | Description |
 |-------|------|-------------|-------------|
 | `id` | Integer | PK | — |
-| `name` | String | NOT NULL | Nom complet (ex: `Kilogramme`) |
-| `symbol` | String | NOT NULL | Symbole court (ex: `kg`) |
-| `category` | Enum | NOT NULL | `weight`, `volume`, `length`, `unit`, `time`, `surface` |
-| `base_unit_id` | Integer | FK → units_of_measure.id, nullable | Unité de référence |
-| `conversion_factor` | Numeric | NOT NULL, default 1 | Facteur de conversion vers l'unité de base |
+| `name` | String(100) | NOT NULL | Nom complet (ex: `Kilogramme`) |
+| `symbol` | String(20) | NOT NULL, indexed, unique(+company_id) | Symbole court (ex: `kg`) |
+| `category` | String(20) | NOT NULL | `weight`, `volume`, `length`, `unit`, `time`, `surface` |
+| `base_unit_id` | Integer | FK → units_of_measure.id, SET NULL | Unité de référence (null = unité de base) |
+| `conversion_factor` | Numeric(15,6) | NOT NULL, default 1 | Facteur de conversion vers l'unité de base |
 | `company_id` | Integer | FK → companies.id, CASCADE | Isolation tenant |
 | `is_active` | Boolean | default True | Soft delete |
 | `created_at` | DateTime(tz) | auto | — |
@@ -474,7 +482,7 @@ difference = counted_quantity - expected_quantity  # si counted_quantity renseig
 
 ---
 
-### 3.13 StockTransfer — 🔮 À implémenter
+### 3.13 StockTransfer ✅
 
 **Table** : `stock_transfers`
 
@@ -508,7 +516,7 @@ difference = counted_quantity - expected_quantity  # si counted_quantity renseig
 
 ---
 
-### 3.14 InventoryCycle — 🔮 À implémenter
+### 3.14 InventoryCycle ✅
 
 **Table** : `inventory_cycles`
 
@@ -674,6 +682,41 @@ Base URL : `/api/v1`
 | `GET` | `/stock/replenishment-suggestions` | `stock.view` | Suggestions de réappro |
 | `POST` | `/stock/calculate-reorder-points` | `stock.edit` | Recalculer les points de commande |
 | `POST` | `/stock/calculate-abc-classification` | `stock.edit` | Recalculer la classification ABC |
+
+### 5.10 Unités de mesure
+
+| Méthode | Endpoint | Permission | Description |
+|---------|----------|-----------|-------------|
+| `GET` | `/units` | `stock.view` | Liste paginée (filtres: category, search, is_active) |
+| `POST` | `/units` | `stock.create` | Créer une unité |
+| `GET` | `/units/{id}` | `stock.view` | Détail d'une unité |
+| `PATCH` | `/units/{id}` | `stock.edit` | Modifier une unité |
+| `GET` | `/units/{id}/conversions` | `stock.view` | Conversions possibles (meme catégorie) |
+| `POST` | `/units/seed` | `stock.create` | Insérer les unités par défaut (pce, kg, g, t, L, mL, m, cm, m2, h, j, ctn) |
+
+### 5.11 Transferts inter-entrepôts
+
+| Méthode | Endpoint | Permission | Description |
+|---------|----------|-----------|-------------|
+| `GET` | `/stock-transfers` | `stock.view` | Liste paginée (filtres: status, search) |
+| `POST` | `/stock-transfers` | `stock.create` | Créer un transfert avec lignes |
+| `GET` | `/stock-transfers/{id}` | `stock.view` | Détail avec lignes |
+| `PATCH` | `/stock-transfers/{id}` | `stock.edit` | Modifier (brouillon uniquement) |
+| `POST` | `/stock-transfers/{id}/validate` | `stock.validate` | Valider (décrémente stock source) |
+| `POST` | `/stock-transfers/{id}/ship` | `stock.edit` | Marquer comme expédié |
+| `POST` | `/stock-transfers/{id}/receive` | `stock.validate` | Réceptionner (incrémente stock destination) |
+| `POST` | `/stock-transfers/{id}/cancel` | `stock.validate` | Annuler (reverse stock si nécessaire) |
+
+### 5.12 Cycles d'inventaire
+
+| Méthode | Endpoint | Permission | Description |
+|---------|----------|-----------|-------------|
+| `GET` | `/inventory-cycles` | `stock.view` | Liste paginée (filtres: status, search) |
+| `POST` | `/inventory-cycles` | `stock.create` | Créer un cycle manuellement |
+| `POST` | `/inventory-cycles/generate` | `stock.create` | Générer cycles automatiques (ABC) |
+| `GET` | `/inventory-cycles/{id}` | `stock.view` | Détail d'un cycle |
+| `POST` | `/inventory-cycles/{id}/start` | `stock.edit` | Démarrer (crée un inventaire filtré) |
+| `POST` | `/inventory-cycles/{id}/complete` | `stock.validate` | Marquer comme terminé |
 
 ---
 
@@ -1236,19 +1279,18 @@ Comptage régulier et planifié d'une partie du stock (plutôt qu'inventaire com
 3. **Saisir** les quantités comptées par ligne
 4. **Valider** → création automatique de mouvements d'ajustement pour chaque écart
 
-### 🔮 Améliorations prévues : InventoryCycle
+### InventoryCycle — ✅ Implémenté
 
-| Fonctionnalité | Description |
-|----------------|-------------|
-| Planification automatique | Génération de cycles basée sur la classification ABC |
-| Attribution par zone | Assigner des zones/catégories à des magasiniers |
-| Suivi de fréquence | `monthly`, `quarterly`, `yearly` |
-| Filtrage par classification | Inventaire uniquement des produits A, B ou C |
+| Fonctionnalité | Statut | Description |
+|----------------|--------|-------------|
+| Planification automatique | ✅ | Génération de cycles basée sur la classification ABC (A=mensuel, B=trimestriel, C=annuel) |
+| Attribution par zone | ✅ | Assigner des entrepôts et catégories à des magasiniers |
+| Suivi de fréquence | ✅ | `monthly`, `quarterly`, `yearly` |
+| Filtrage par classification | ✅ | Inventaire uniquement des produits A, B ou C |
 
-**API prévue** :
-- `GET /api/v1/inventory-cycles` — Liste des cycles
-- `POST /api/v1/inventory-cycles/generate` — Générer cycles automatiques
-- `POST /api/v1/inventory-cycles/{id}/start` — Démarrer un cycle
+**API** : Voir [section 5.12](#512-cycles-dinventaire)
+
+**Workflow** : `planned` → `in_progress` (crée un inventaire filtré) → `completed`
 
 ---
 
@@ -1297,11 +1339,11 @@ stateDiagram-v2
 
 ## 15. 🚚 Transferts inter-entrepôts
 
-### État actuel
+### ✅ Implémenté
 
-Les transferts sont gérés via des mouvements de type `transfer` (source + destination dans le même entrepôt ou entre entrepôts).
+Les transferts inter-entrepôts disposent d'un workflow dédié via le modèle `StockTransfer` avec lignes détaillées (`StockTransferLine`).
 
-### 🔮 Workflow dédié avec StockTransfer
+### Workflow StockTransfer
 
 ```mermaid
 stateDiagram-v2
@@ -1327,34 +1369,30 @@ stateDiagram-v2
     cancelled --> [*]
 ```
 
-**API prévue** :
-- `POST /api/v1/stock-transfers` — Créer un transfert
-- `POST /api/v1/stock-transfers/{id}/validate` — Valider le départ
-- `POST /api/v1/stock-transfers/{id}/ship` — Marquer comme expédié
-- `POST /api/v1/stock-transfers/{id}/receive` — Réceptionner
-- `POST /api/v1/stock-transfers/{id}/cancel` — Annuler
+**API** : Voir [section 5.11](#511-transferts-inter-entrepôts)
 
 ---
 
-## 16. 📏 Unités de mesure
+## 16. 📏 Unités de mesure — ✅ Implémenté
 
-### État actuel
+### Modèle UnitOfMeasure
 
-Le champ `Product.unit_of_measure` est un `String` libre (défaut `"pce"`).
+Voir [section 3.11](#311-unitofmeasure) pour la structure du modèle.
 
-### 🔮 Modèle UnitOfMeasure (à implémenter)
-
-Voir [section 3.11](#311-unitofmeasure--à-implémenter) pour la structure du modèle.
+**Impact sur Product** :
+- `Product.unit_id` → FK vers UnitOfMeasure (unité de vente/stock)
+- `Product.purchase_unit_id` → FK vers UnitOfMeasure (unité d'achat, peut différer)
+- Le champ legacy `Product.unit_of_measure` (String) est conservé pour rétrocompatibilité
 
 **Cas d'usage** :
 - Achat en cartons (24 pièces), vente à l'unité
 - Achat en kg, vente en grammes
-- Conversion automatique lors de la création de mouvements
+- Conversion automatique via `conversion_factor` et `base_unit_id`
 
-**API prévue** :
-- `GET /api/v1/units` — Liste des unités
-- `POST /api/v1/units` — Créer une unité
-- `GET /api/v1/units/{id}/conversions` — Conversions possibles
+**Seed par défaut** (12 unités) :
+`pce`, `ctn` (24 pce), `kg`, `g`, `t`, `L`, `mL`, `m`, `cm`, `m2`, `h`, `j`
+
+**API** : Voir [section 5.10](#510-unités-de-mesure)
 
 ---
 
@@ -1476,5 +1514,5 @@ Voir [section 3.12](#312-productvariant--à-implémenter) pour la structure du m
 ---
 
 > **Légende** :
-> - ✅ **Implémenté** — Fonctionnalité opérationnelle
-> - 🔮 **À implémenter** — Fonctionnalité planifiée, non encore développée
+> - ✅ **Implémenté** — Fonctionnalité opérationnelle (UnitOfMeasure, StockTransfer, InventoryCycle, etc.)
+> - 🔮 **À implémenter** — Fonctionnalité planifiée (ProductVariant, blocage de lot, photos multi, etc.)

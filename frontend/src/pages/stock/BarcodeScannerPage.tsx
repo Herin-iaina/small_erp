@@ -76,7 +76,7 @@ export default function BarcodeScannerPage() {
                 <span className="text-muted-foreground">Type</span>
                 <span>{product.product_type}</span>
                 <span className="text-muted-foreground">Unite</span>
-                <span>{product.unit_of_measure}</span>
+                <span>{product.unit?.symbol ?? product.unit_of_measure}</span>
                 <span className="text-muted-foreground">Categorie</span>
                 <span>{product.category?.name || "-"}</span>
                 <span className="text-muted-foreground">Prix de vente</span>
